@@ -24,6 +24,8 @@ class Lowered:
     data: dict
     blockers: list[str] = field(default_factory=list)   # must be fixed before DEMOShark can run it
     warnings: list[str] = field(default_factory=list)
+    step_map: dict[str, str] = field(default_factory=dict)   # lowered id → spec step id
+    fingerprints: dict[str, str] = field(default_factory=dict)  # spec step id → fingerprint
 
 
 def _text(v: Text | None, langs: list[str]) -> Text | None:
@@ -93,9 +95,11 @@ def lower(spec: LivingSpec, proc_id: str) -> Lowered:
         if s.status in ("proposed",) and s.confidence < 0.75:
             out.warnings.append(f"{s.id}: still 'proposed' with confidence {s.confidence}")
         out.data["steps"].append(_strip(step))
+        out.fingerprints[s.id] = s.fingerprint()
 
     # renumber after skipped steps so DS7 (S1..Sn in order) holds; keep a map in warnings
     for i, st in enumerate(out.data["steps"], start=1):
+        out.step_map[f"S{i}"] = st["id"]
         if st["id"] != f"S{i}":
             out.warnings.append(f"{st['id']} lowered as S{i}")
             st["id"] = f"S{i}"

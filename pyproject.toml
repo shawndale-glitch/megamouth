@@ -22,7 +22,8 @@ llm    = ["anthropic>=1.0"]
 sheets = ["openpyxl>=3.1"]
 av     = ["imageio-ffmpeg>=0.5"]          # keyframes; faster-whisper is optional on top
 asr    = ["faster-whisper>=1.0"]
-all    = ["megamouth[llm,sheets,av]"]
+serve  = ["fastapi>=0.115", "uvicorn>=0.30"]   # review console
+all    = ["megamouth[llm,sheets,av,serve]"]
 
 [project.scripts]
 megamouth = "megamouth.cli:app"
@@ -33,9 +34,10 @@ megamouth = "megamouth.cli:app"
 "diagrams.bpmn"  = "megamouth.ingest.diagrams:BpmnIngester"
 "diagrams.figjam" = "megamouth.ingest.diagrams:FigJamIngester"
 "av.screenrec"   = "megamouth.ingest.av:ScreenRecordingIngester"
+"ground.run"     = "megamouth.ingest.ground:GroundRunIngester"
 
 [dependency-groups]
-dev = ["pytest>=8", "openpyxl>=3.1", "imageio-ffmpeg>=0.5"]
+dev = ["pytest>=8", "openpyxl>=3.1", "imageio-ffmpeg>=0.5", "fastapi>=0.115", "httpx>=0.27"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/megamouth"]

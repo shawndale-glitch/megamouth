@@ -341,8 +341,8 @@ Remotion needs a paid company licence above a small headcount, and we are not bu
 
 | Phase | Scope | Proves |
 |---|---|---|
-| **P0 · Spike (≈2 wks)** | Core, Evidence, Spec models; 3 ingesters: **SOP xls**, **screen recording MP4**, **FigJam/BPMN**; `synth` for procedures only; `lower --to demoshark:1`; render through DEMOShark | Recording + SOP → executable spec → narrated video, with an evidence trail |
-| **P1 · Living** | Grounding runs, stale/verified status, watchers (Figma version, file drop), semantic-diff PRs, review console v0 | The "living" loop |
+| **P0 · Spike (≈2 wks)** ✅ | Core, Evidence, Spec models; 3 ingesters: **SOP xls**, **screen recording MP4**, **FigJam/BPMN**; `synth` for procedures only; `lower --to demoshark:1`; render through DEMOShark | Recording + SOP → executable spec → narrated video, with an evidence trail |
+| **P1 · Living** ✅ | Grounding runs, stale/verified status, watchers (file drop; Figma version moves to P3 with the Figma ingester), semantic-diff PRs, review console v0 | The "living" loop |
 | **P2 · Immersive** | Process Explorer, click-along replay (rrweb), ffmpeg smart-zoom, GIF per step | The wow outputs |
 | **P3 · Breadth** | Docs, Confluence, Jira, voice meetings, live-app crawl, vsdx | "Anything in" |
 | **P4 · Scale** | MCP server, assistant, personas, tours, orchestration server, multi-team | Platform |

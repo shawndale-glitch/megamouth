@@ -149,6 +149,17 @@ class Step(Element):
     result: Text | None = None
     media: MediaIntent | None = None
 
+    def fingerprint(self) -> str:
+        """Hash of what a grounding run actually exercises. If it changes, a past
+        verification no longer applies to this step."""
+        import hashlib
+        import json
+
+        body = {k: getattr(self, k) for k in ("say", "do", "expect")}
+        body = {k: (v.model_dump(mode="json", exclude_none=True) if hasattr(v, "model_dump") else v)
+                for k, v in body.items() if v is not None}
+        return hashlib.sha256(json.dumps(body, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
+
 
 class Procedure(Element):
     title: Text = ""
@@ -173,24 +184,37 @@ class Claim(_Model):
 
 
 class Conflict(_Model):
-    id: str
+    id: str                       # stable: C-<hash of about + summary>
     about: str                    # spec path: "approve-invoice.S3.do"
     summary: str
     claims: list[Claim] = Field(default_factory=list)
     status: Literal["open", "resolved"] = "open"
     resolved_by: str = ""
+    resolution: str = ""          # which claim won, or a note
 
 
 class ReviewItem(_Model):
-    id: str
+    id: str                       # stable: R-<hash of about + reason>
     about: str
     reason: str                   # "low-confidence alignment", "no expect", ...
+
+
+class Verification(_Model):
+    """The last grounding run of one procedure in one language."""
+    procedure: str
+    lang: str
+    passed: bool
+    started: str = ""
+    failed_at: str = ""
+    error: str = ""
+    evidence: str = ""
 
 
 class Provenance(_Model):
     sources: list[dict[str, Any]] = Field(default_factory=list)
     conflicts: list[Conflict] = Field(default_factory=list)
     review: list[ReviewItem] = Field(default_factory=list)
+    verification: list[Verification] = Field(default_factory=list)
 
 
 class LivingSpec(_Model):

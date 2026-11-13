@@ -65,8 +65,12 @@ def ingest(ws: Workspace, paths: list[Path]) -> IngestReport:
         for side in (path.with_suffix(".vtt"), path.with_suffix(".srt")):
             if plugin.kind == "video" and side.exists():
                 src.sha256 = hashlib.sha256((src.sha256 + sha256_file(side)).encode()).hexdigest()
-        if ws.store.has_source(src):
+        if ws.store.is_latest(src):
             rep.unchanged.append(src.id)
+            continue
+        if ws.store.has_source(src):  # reverted to a version already ingested
+            ws.store.restore_source(src)
+            rep.added.append((src.id, plugin.name, 0))
             continue
         ctx = Ctx(store=ws.store, workspace=ws.root, cloud=src.cloud)
         atoms = list(plugin.ingest(path, src, ctx))  # fail before recording the source, not after

@@ -24,6 +24,14 @@ DEFAULT_CONFIG = """\
 environment = "demo"            # test | training | demo. Production is always refused.
 languages = ["en"]
 
+[spec]
+id = "living-spec"
+title = "Living Spec"
+
+[ground]
+# How `megamouth verify` runs DEMOShark. {python} is $DEMOSHARK_PYTHON or this interpreter.
+command = ["{python}", "-m", "demoshark", "run", "{spec}", "--voice", "none", "--lang", "{lang}", "--out", "{out}"]
+
 [llm]
 model = "claude-opus-5-5"
 effort = "medium"
@@ -36,7 +44,7 @@ cloud_allow = ["**/paydesk/**", "**/examples/**"]
 cloud_deny  = []
 """
 
-GITIGNORE = "evidence/\nbuild/\ncache/\nmanual/\n.env\n"
+GITIGNORE = "evidence/\nbuild/\ncache/\nmanual/\n.env\n# runs/*.ground.json are records of what was proven: commit them\n"
 
 _PROD = re.compile(r"(^|[.\-/])prod(uction)?([.\-/:]|$)", re.I)
 
@@ -74,7 +82,7 @@ class Workspace:
     @classmethod
     def init(cls, root: Path) -> "Workspace":
         root.mkdir(parents=True, exist_ok=True)
-        for d in ("spec/proposed", "inbox", "evidence", "build"):
+        for d in ("spec/proposed", "inbox", "runs", "evidence", "build"):
             (root / d).mkdir(parents=True, exist_ok=True)
         if not (root / CONFIG).exists():
             (root / CONFIG).write_text(DEFAULT_CONFIG, encoding="utf-8")

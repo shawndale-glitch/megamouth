@@ -13,18 +13,18 @@ jobs:
       - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: Install
-        run: uv sync --extra llm --extra sheets --extra av
+        run: uv sync --extra llm --extra sheets --extra av --extra serve
       - name: Tests
         run: uv run pytest -q
       - name: Plugin requirements
         run: uv run megamouth doctor
 
       # The Paydesk example end to end: four disagreeing sources → Living Spec → demoshark:1
-      - name: Ingest, synthesize, lower
+      - name: Ingest (sources + committed grounding runs), synthesize, lower
         working-directory: examples/paydesk
         run: |
-          uv run megamouth ingest inbox
-          uv run megamouth synth --id paydesk --title "Paydesk accounts payable"
+          uv run megamouth ingest inbox runs
+          uv run megamouth synth
           uv run megamouth lower spec/proposed/paydesk.yaml -p approve-an-invoice
       - name: Proposed spec in git is up to date
         run: git diff --exit-code -- examples/paydesk/spec/proposed/
@@ -47,8 +47,19 @@ jobs:
           ../ds/bin/python -m playwright install --with-deps chromium
       - name: DEMOShark check (rules DS1-DS10)
         run: ../ds/bin/python -m demoshark check examples/paydesk/build/demoshark/approve-an-invoice.yaml
-      - name: Record the generated walk-through against Paydesk, captions only
-        run: ../ds/bin/python -m demoshark demo --spec examples/paydesk/build/demoshark/approve-an-invoice.yaml --voice none --lang en --out build
+      - name: Grounding run - every step must end up verified
+        working-directory: examples/paydesk
+        env: { DEMOSHARK_PYTHON: "${{ github.workspace }}/../ds/bin/python" }
+        run: |
+          uv run megamouth verify | tee verify.log
+          grep -q "6 step(s): 6 verified" verify.log
+      - name: A changed SOP step must turn stale
+        working-directory: examples/paydesk
+        run: |
+          sed -i 's/,Select Approve\.,/,Select Approve all.,/' inbox/paydesk-sop.csv
+          uv run megamouth watch --once | tee watch.log
+          grep -q "approve-an-invoice.S5\*\*: verified → stale" watch.log
+          git checkout inbox/paydesk-sop.csv
       - name: Drift must fail
         run: |
           if ../ds/bin/python -m demoshark demo --spec examples/paydesk/build/demoshark/approve-an-invoice.yaml --drift --voice none --lang en --out build-drift; then
@@ -59,6 +70,7 @@ jobs:
         with:
           name: walkthrough
           path: |
-            build/approve-an-invoice/
+            examples/paydesk/build/ground/out/
+            examples/paydesk/runs/
             examples/paydesk/spec/proposed/paydesk.yaml
             examples/paydesk/build/demoshark/

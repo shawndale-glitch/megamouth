@@ -1,0 +1,59 @@
+{
+  "megamouth_ground": 1,
+  "procedure": "approve-an-invoice",
+  "lang": "en",
+  "passed": true,
+  "started": "2026-11-13T14:09:24",
+  "seconds": 21.48,
+  "runner": "-m demoshark demo",
+  "steps": [
+    {
+      "step": "S1",
+      "lowered_id": "S1",
+      "status": "pass",
+      "error": "",
+      "fingerprint": "c804b6b2f9185952",
+      "shot": "../build/ground/out/approve-an-invoice/en/shots/S1.png"
+    },
+    {
+      "step": "S2",
+      "lowered_id": "S2",
+      "status": "pass",
+      "error": "",
+      "fingerprint": "dfb20adf1330f663",
+      "shot": "../build/ground/out/approve-an-invoice/en/shots/S2.png"
+    },
+    {
+      "step": "S3",
+      "lowered_id": "S3",
+      "status": "pass",
+      "error": "",
+      "fingerprint": "b9b9ac63e4d743f6",
+      "shot": "../build/ground/out/approve-an-invoice/en/shots/S3.png"
+    },
+    {
+      "step": "S4",
+      "lowered_id": "S4",
+      "status": "pass",
+      "error": "",
+      "fingerprint": "0fa3179b63d01ae3",
+      "shot": "../build/ground/out/approve-an-invoice/en/shots/S4.png"
+    },
+    {
+      "step": "S5",
+      "lowered_id": "S5",
+      "status": "pass",
+      "error": "",
+      "fingerprint": "2916076e5d12e40b",
+      "shot": "../build/ground/out/approve-an-invoice/en/shots/S5.png"
+    },
+    {
+      "step": "S6",
+      "lowered_id": "S6",
+      "status": "pass",
+      "error": "",
+      "fingerprint": "e62050b3f2153a3a",
+      "shot": "../build/ground/out/approve-an-invoice/en/shots/S6.png"
+    }
+  ]
+}

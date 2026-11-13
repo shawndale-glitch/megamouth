@@ -184,7 +184,7 @@ processes:
     procedure: ''
 procedures:
 - id: approve-an-invoice
-  status: proposed
+  status: verified
   evidence:
   - ev:paydesk-sop#row:2@5eafa4a1
   - ev:overlay#procedures.approve-an-invoice
@@ -202,11 +202,12 @@ procedures:
       due: +30d
   steps:
   - id: S1
-    status: proposed
+    status: verified
     evidence:
     - ev:paydesk-sop#row:2@5eafa4a1
     - ev:approve-invoice-training#t:00:00.200@5b08f2b6
     - ev:approve-invoice-training#t:00:00.000@5b08f2b6
+    - ev:approve-an-invoice-en-ground#step:S1@358fe45b
     assumption: false
     confidence: 0.5
     say: Open Paydesk on the invoices screen.
@@ -222,11 +223,12 @@ procedures:
       emphasis: ring
       clip: approve-invoice-training@00:00.200-00:02.800
   - id: S2
-    status: proposed
+    status: verified
     evidence:
     - ev:paydesk-sop#row:3@5eafa4a1
     - ev:approve-invoice-training#t:00:03.200@5b08f2b6
     - ev:approve-invoice-training#t:00:03.000@5b08f2b6
+    - ev:approve-an-invoice-en-ground#step:S2@358fe45b
     assumption: false
     confidence: 0.7
     say: Type the invoice number in Invoice number.
@@ -244,12 +246,13 @@ procedures:
       emphasis: ring
       clip: approve-invoice-training@00:03.200-00:05.800
   - id: S3
-    status: reviewed
+    status: verified
     evidence:
     - ev:paydesk-sop#row:4@5eafa4a1
     - ev:approve-invoice-training#t:00:06.200@5b08f2b6
     - ev:approve-invoice-training#t:00:06.000@5b08f2b6
     - ev:overlay#procedures.approve-an-invoice.S3
+    - ev:approve-an-invoice-en-ground#step:S3@358fe45b
     assumption: false
     confidence: 0.6
     say: Select Search. The invoice appears in the list.
@@ -267,12 +270,13 @@ procedures:
       emphasis: ring
       clip: approve-invoice-training@00:06.200-00:08.800
   - id: S4
-    status: reviewed
+    status: verified
     evidence:
     - ev:paydesk-sop#row:5@5eafa4a1
     - ev:approve-invoice-training#t:00:09.200@5b08f2b6
     - ev:approve-invoice-training#t:00:09.000@5b08f2b6
     - ev:overlay#procedures.approve-an-invoice.S4
+    - ev:approve-an-invoice-en-ground#step:S4@358fe45b
     assumption: false
     confidence: 0.7
     say: Select the invoice number link to open it.
@@ -290,11 +294,12 @@ procedures:
       emphasis: ring
       clip: approve-invoice-training@00:09.200-00:11.800
   - id: S5
-    status: proposed
+    status: verified
     evidence:
     - ev:paydesk-sop#row:6@5eafa4a1
     - ev:approve-invoice-training#t:00:15.200@5b08f2b6
     - ev:approve-invoice-training#t:00:15.000@5b08f2b6
+    - ev:approve-an-invoice-en-ground#step:S5@358fe45b
     assumption: false
     confidence: 0.6
     say: Select Approve.
@@ -312,11 +317,12 @@ procedures:
       emphasis: ring
       clip: approve-invoice-training@00:15.200-00:17.800
   - id: S6
-    status: proposed
+    status: verified
     evidence:
     - ev:paydesk-sop#row:7@5eafa4a1
     - ev:approve-invoice-training#t:00:18.200@5b08f2b6
     - ev:approve-invoice-training#t:00:18.000@5b08f2b6
+    - ev:approve-an-invoice-en-ground#step:S6@358fe45b
     assumption: false
     confidence: 0.55
     say: Check the supplier and the amount, then select Confirm.
@@ -366,8 +372,14 @@ provenance:
     sha256: 5eafa4a12a24d0690ae8c3bc4046482b0528a71c6ac37133e5dbf408e0fbd8f1
     adapter: sheets.sop@0.1
     cloud: true
+  - id: approve-an-invoice-en-ground
+    kind: ground
+    uri: runs/approve-an-invoice.en.ground.json
+    sha256: 358fe45ba44027f061a901540ee89b721397406e6dfbc0e30a28aad59895b685
+    adapter: ground.run@0.1
+    cloud: true
   conflicts:
-  - id: C1
+  - id: C-f5207b
     about: P2P-03.t-approve.lane
     summary: "'Approve invoice' is in different lanes"
     claims:
@@ -379,7 +391,8 @@ provenance:
       - ev:invoice-approval#node:1:8@8e7871c9
     status: open
     resolved_by: ''
-  - id: C2
+    resolution: ''
+  - id: C-ecce5d
     about: P2P-03.end.lane
     summary: "'Invoice approved' is in different lanes"
     claims:
@@ -391,7 +404,8 @@ provenance:
       - ev:invoice-approval#node:1:9@8e7871c9
     status: open
     resolved_by: ''
-  - id: C3
+    resolution: ''
+  - id: C-56da8e
     about: P2P-03.t-query
     summary: task 'Query supplier' appears in only one diagram
     claims:
@@ -402,7 +416,8 @@ provenance:
       - ev:invoice-approval#node:1:1@8e7871c9
     status: open
     resolved_by: ''
-  - id: C4
+    resolution: ''
+  - id: C-60622d
     about: P2P-03.lanes
     summary: lane 'AP Lead' is missing from one diagram
     claims:
@@ -416,7 +431,8 @@ provenance:
       - ev:p2p-invoice-approval#node:P2P-03@0ac74d71
     status: open
     resolved_by: ''
-  - id: C5
+    resolution: ''
+  - id: C-96efc7
     about: approve-an-invoice
     summary: "recording approve-invoice-training shows a step the SOP lacks: 'Before approving, check the due date on the
       invoice.'"
@@ -428,22 +444,16 @@ provenance:
       - ev:paydesk-sop#row:2@5eafa4a1
     status: open
     resolved_by: ''
+    resolution: ''
   review:
-  - id: R1
+  - id: R-ecfe7f
     about: P2P-03.t-match
     reason: low-confidence match (0.682) with 'Match invoice to PO' in another diagram
-  - id: R2
-    about: approve-an-invoice.S1.do
-    reason: guessed open (0.5); confirm the control and its visible name
-  - id: R3
-    about: approve-an-invoice.S2.do
-    reason: guessed fill (0.7); confirm the control and its visible name
-  - id: R4
-    about: approve-an-invoice.S3.do
-    reason: guessed click (0.6); confirm the control and its visible name
-  - id: R6
-    about: approve-an-invoice.S5.do
-    reason: guessed click (0.6); confirm the control and its visible name
-  - id: R7
-    about: approve-an-invoice.S6.do
-    reason: guessed click (0.55); confirm the control and its visible name
+  verification:
+  - procedure: approve-an-invoice
+    lang: en
+    passed: true
+    started: '2026-11-13T14:09:24'
+    failed_at: ''
+    error: ''
+    evidence: ev:approve-an-invoice-en-ground#run@358fe45b

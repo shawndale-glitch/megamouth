@@ -13,6 +13,8 @@ Model-assisted reading of keyframes is opt-in (`vlm=True`) and goes through the 
 """
 from __future__ import annotations
 
+import hashlib
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -23,12 +25,13 @@ from pydantic import BaseModel, Field
 from megamouth.core.evidence import Evidence, EvidenceStore, SourceRef
 from megamouth.core.spec import (
     Actor, Claim, Conflict, Flow, LivingSpec, MediaIntent, Meta, Procedure, Process,
-    ProcessNode, ReviewItem, Step, System, Target,
+    ProcessNode, Provenance, ReviewItem, Step, System, Target,
 )
 from megamouth.ingest.av import fmt_t
 from megamouth.ingest.diagrams import slug
 from megamouth.synth import align
 from megamouth.synth.actions import parse_action, parse_expect
+from megamouth.synth.status import apply_grounding, apply_resolutions
 
 
 @dataclass
@@ -41,11 +44,22 @@ class SynthContext:
     review: list[ReviewItem] = field(default_factory=list)
 
     def conflict(self, about: str, summary: str, claims: list[tuple[Any, list[str]]]) -> None:
-        self.conflicts.append(Conflict(id=f"C{len(self.conflicts) + 1}", about=about, summary=summary,
+        cid = stable_id("C", about, summary)
+        if any(c.id == cid for c in self.conflicts):
+            return
+        self.conflicts.append(Conflict(id=cid, about=about, summary=summary,
                                        claims=[Claim(value=v, evidence=e) for v, e in claims]))
 
     def flag(self, about: str, reason: str) -> None:
-        self.review.append(ReviewItem(id=f"R{len(self.review) + 1}", about=about, reason=reason))
+        rid = stable_id("R", about, re.sub(r"[\d.]+", "#", reason))  # confidence numbers don't change identity
+        if any(r.id == rid for r in self.review):
+            return
+        self.review.append(ReviewItem(id=rid, about=about, reason=reason))
+
+
+def stable_id(prefix: str, *parts: str) -> str:
+    """Same finding → same id on every synthesis, so a person's resolution sticks to it."""
+    return f"{prefix}-" + hashlib.sha1("\x1f".join(parts).encode()).hexdigest()[:6]
 
 
 # ------------------------------------------------------------------ processes
@@ -290,10 +304,15 @@ def deep_merge(base: Any, over: Any) -> Any:
     return over
 
 
+OVERLAY_DECISIONS = ("resolutions", "accepted")   # decisions about findings, not spec content
+
+
 def apply_overlay(spec_dict: dict, overlay: dict) -> dict:
     """Apply human decisions. Lists of elements are addressed by id: {procedures: {approve-invoice: {...}}}."""
     out = dict(spec_dict)
     for key, val in overlay.items():
+        if key in OVERLAY_DECISIONS:
+            continue
         if key in ("meta",):
             out[key] = deep_merge(out.get(key, {}), val)
             continue
@@ -341,12 +360,20 @@ def synthesize(store: EvidenceStore, *, title: str, spec_id: str, languages: lis
         # an overlay can settle a review item: drop items about paths it now provides
         provided = _overlay_paths(overlay)
         ctx.review = [r for r in ctx.review if not any(r.about.startswith(p) for p in provided)]
-    d["provenance"] = {
-        "sources": [s.model_dump(mode="json", exclude={"ingested_at"}) for s in sources.values()],  # deterministic: re-synth gives a clean diff
-        "conflicts": [c.model_dump(mode="json") for c in ctx.conflicts],
-        "review": [r.model_dump(mode="json") for r in ctx.review],
-    }
-    return LivingSpec.model_validate(d)
+    spec = LivingSpec.model_validate(d)
+
+    # the living part: what grounding runs proved, and what people decided
+    verification = apply_grounding(spec, store, ctx.flag)
+    # a passing run proves the guessed control and the expectation: those questions are answered
+    proven = {f"{p.id}.{st.id}" for p in spec.procedures for st in p.steps if st.status == "verified"}
+    ctx.review = [r for r in ctx.review
+                  if not (r.about.rsplit(".", 1)[0] in proven and r.about.endswith((".do", ".expect")))]
+    spec.provenance = Provenance(
+        # ingest timestamps are left out on purpose: re-synthesis must give a clean diff
+        sources=[s.model_dump(mode="json", exclude={"ingested_at"}) for s in sources.values()],
+        conflicts=ctx.conflicts, review=ctx.review, verification=verification)
+    apply_resolutions(spec, overlay)
+    return spec
 
 
 def _overlay_paths(overlay: dict) -> list[str]:

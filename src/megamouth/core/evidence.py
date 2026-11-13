@@ -66,7 +66,8 @@ class EvidenceStore:
         self.root = root
         self.blobs = root / "blobs"
         self.blobs.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(root / "index.sqlite")
+        # one connection, shared by the review console's worker threads; callers serialize access
+        self.db = sqlite3.connect(root / "index.sqlite", check_same_thread=False)
         self.db.executescript(
             """
             CREATE TABLE IF NOT EXISTS sources(
@@ -89,6 +90,18 @@ class EvidenceStore:
     def has_source(self, src: SourceRef) -> bool:
         return self.db.execute(
             "SELECT 1 FROM sources WHERE id=? AND sha256=?", (src.id, src.sha256)).fetchone() is not None
+
+    def is_latest(self, src: SourceRef) -> bool:
+        latest = self.latest_sources().get(src.id)
+        return latest is not None and latest.sha256 == src.sha256
+
+    def restore_source(self, src: SourceRef) -> None:
+        """A file went back to a version seen before: make that version current again.
+        Its atoms are already stored, so nothing is re-extracted."""
+        row = self.db.execute("SELECT body FROM sources WHERE id=? AND sha256=?", (src.id, src.sha256)).fetchone()
+        self.db.execute("DELETE FROM sources WHERE id=? AND sha256=?", (src.id, src.sha256))
+        self.db.execute("INSERT INTO sources VALUES (?,?,?)", (src.id, src.sha256, row[0]))
+        self.db.commit()
 
     def latest_sources(self) -> dict[str, SourceRef]:
         out: dict[str, SourceRef] = {}
