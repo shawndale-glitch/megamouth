@@ -207,7 +207,7 @@ procedures:
     - ev:paydesk-sop#row:2@5eafa4a1
     - ev:approve-invoice-training#t:00:00.200@5b08f2b6
     - ev:approve-invoice-training#t:00:00.000@5b08f2b6
-    - ev:approve-an-invoice-en-ground#step:S1@358fe45b
+    - ev:approve-an-invoice-en-ground#step:S1@dbe3ed23
     assumption: false
     confidence: 0.5
     say: Open Paydesk on the invoices screen.
@@ -228,7 +228,7 @@ procedures:
     - ev:paydesk-sop#row:3@5eafa4a1
     - ev:approve-invoice-training#t:00:03.200@5b08f2b6
     - ev:approve-invoice-training#t:00:03.000@5b08f2b6
-    - ev:approve-an-invoice-en-ground#step:S2@358fe45b
+    - ev:approve-an-invoice-en-ground#step:S2@dbe3ed23
     assumption: false
     confidence: 0.7
     say: Type the invoice number in Invoice number.
@@ -252,7 +252,7 @@ procedures:
     - ev:approve-invoice-training#t:00:06.200@5b08f2b6
     - ev:approve-invoice-training#t:00:06.000@5b08f2b6
     - ev:overlay#procedures.approve-an-invoice.S3
-    - ev:approve-an-invoice-en-ground#step:S3@358fe45b
+    - ev:approve-an-invoice-en-ground#step:S3@dbe3ed23
     assumption: false
     confidence: 0.6
     say: Select Search. The invoice appears in the list.
@@ -276,7 +276,7 @@ procedures:
     - ev:approve-invoice-training#t:00:09.200@5b08f2b6
     - ev:approve-invoice-training#t:00:09.000@5b08f2b6
     - ev:overlay#procedures.approve-an-invoice.S4
-    - ev:approve-an-invoice-en-ground#step:S4@358fe45b
+    - ev:approve-an-invoice-en-ground#step:S4@dbe3ed23
     assumption: false
     confidence: 0.7
     say: Select the invoice number link to open it.
@@ -299,7 +299,7 @@ procedures:
     - ev:paydesk-sop#row:6@5eafa4a1
     - ev:approve-invoice-training#t:00:15.200@5b08f2b6
     - ev:approve-invoice-training#t:00:15.000@5b08f2b6
-    - ev:approve-an-invoice-en-ground#step:S5@358fe45b
+    - ev:approve-an-invoice-en-ground#step:S5@dbe3ed23
     assumption: false
     confidence: 0.6
     say: Select Approve.
@@ -322,7 +322,7 @@ procedures:
     - ev:paydesk-sop#row:7@5eafa4a1
     - ev:approve-invoice-training#t:00:18.200@5b08f2b6
     - ev:approve-invoice-training#t:00:18.000@5b08f2b6
-    - ev:approve-an-invoice-en-ground#step:S6@358fe45b
+    - ev:approve-an-invoice-en-ground#step:S6@dbe3ed23
     assumption: false
     confidence: 0.55
     say: Check the supplier and the amount, then select Confirm.
@@ -375,7 +375,7 @@ provenance:
   - id: approve-an-invoice-en-ground
     kind: ground
     uri: runs/approve-an-invoice.en.ground.json
-    sha256: 358fe45ba44027f061a901540ee89b721397406e6dfbc0e30a28aad59895b685
+    sha256: dbe3ed236c5e482a4fea3f48e2e42a390ab45bad414e321ed168b1d66617202a
     adapter: ground.run@0.1
     cloud: true
   conflicts:
@@ -453,7 +453,7 @@ provenance:
   - procedure: approve-an-invoice
     lang: en
     passed: true
-    started: '2026-11-13T14:09:24'
+    started: '2026-11-13T14:26:22'
     failed_at: ''
     error: ''
-    evidence: ev:approve-an-invoice-en-ground#run@358fe45b
+    evidence: ev:approve-an-invoice-en-ground#run@dbe3ed23

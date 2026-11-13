@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Process explorer</title>
+<style>
+:root {
+  --bg: #f4f3ef; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #dddcd6; --lane: #ebeae4;
+  --node: #ffffff; --accent: #ff6b57; --edge: #9c9a92;
+  --verified: #1a7f37; --stale: #cf222e; --reviewed: #1f6feb; --proposed: #8a8983;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #141413; --panel: #1e1e1c; --ink: #ecebe6; --muted: #a3a29b; --line: #34332f; --lane: #1a1a18;
+          --node: #24241f; --edge: #6d6b64; --verified: #3fb950; --stale: #f85149; --reviewed: #58a6ff; --proposed: #8f8e87; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { max-width: 1280px; margin: 0 auto; padding: 18px 16px 6px; }
+h1 { font-size: 20px; margin: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 13px; margin-top: 4px; align-items: center; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; }
+.legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; background: var(--c); }
+.layout { max-width: 1280px; margin: 0 auto; padding: 8px 16px 24px; display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: start; }
+@media (max-width: 980px) { .layout { grid-template-columns: 1fr; } aside { position: static; max-height: none; } }
+.layout > * { min-width: 0; }
+.map { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+.map h2 { font-size: 15px; margin: 0; padding: 12px 14px 0; }
+svg { display: block; width: 100%; height: auto; min-width: 720px; }
+.lane-bg { fill: var(--lane); }
+.lane-label { fill: var(--muted); font-size: 12px; font-weight: 600; }
+.edge { fill: none; stroke: var(--edge); stroke-width: 1.6; }
+.edge.back { stroke-dasharray: 5 4; }
+.edge-label { fill: var(--muted); font-size: 11px; }
+.node { cursor: pointer; }
+.node rect, .node circle, .node polygon { fill: var(--node); stroke: var(--edge); stroke-width: 1.6; transition: stroke-width .15s; }
+.node.has-proc rect { stroke: var(--sc); stroke-width: 2.5; }
+.node:hover rect, .node:hover circle, .node:hover polygon, .node.sel rect, .node.sel circle, .node.sel polygon { stroke-width: 3.5; }
+.node:focus { outline: none; }
+.node:focus-visible rect, .node:focus-visible circle, .node:focus-visible polygon { stroke: var(--accent); stroke-width: 3.5; }
+.node text { fill: var(--ink); font-size: 12px; pointer-events: none; }
+.node .end { stroke-width: 3.5; }
+.badge-c { fill: var(--stale); }
+.token { fill: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .token { display: none; } }
+aside { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+aside h3 { margin: 0 0 2px; font-size: 17px; }
+.sub { color: var(--muted); font-size: 13px; }
+.pill { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; padding: 1px 7px; border-radius: 10px; border: 1px solid currentColor; color: var(--sc); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.actions a { font-size: 13px; text-decoration: none; color: #fff; background: var(--accent); border-radius: 6px; padding: 6px 12px; }
+.actions a.ghost { background: none; color: var(--ink); border: 1px solid var(--line); }
+.conflict { border-left: 3px solid var(--stale); padding: 4px 10px; margin: 8px 0; font-size: 13px; }
+.conflict.resolved { border-color: var(--verified); color: var(--muted); }
+.step { border-top: 1px solid var(--line); padding: 10px 0; }
+.step-h { display: flex; gap: 8px; align-items: baseline; }
+.step-h b { font-size: 13px; }
+.step img.gif { width: 100%; border-radius: 6px; border: 1px solid var(--line); margin-top: 6px; background: #fff; }
+details { margin-top: 4px; font-size: 12px; }
+summary { cursor: pointer; color: var(--muted); }
+.ev { display: flex; gap: 8px; align-items: flex-start; padding: 4px 0; }
+.ev img { width: 84px; border-radius: 4px; border: 1px solid var(--line); flex: none; }
+.ev code { font-size: 11px; color: var(--muted); word-break: break-all; }
+.empty { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <div class="meta" id="meta"></div>
+</header>
+<div class="layout">
+  <div id="maps"></div>
+  <aside id="panel" aria-live="polite"><p class="empty">Select a task on the map to see its steps, evidence and conflicts.</p></aside>
+</div>
+<script>
+const D = /*DATA*/null;
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const sc = st => `var(--${st || "proposed"})`;
+
+function wrap(text, max) {
+  const words = String(text).split(/\s+/), lines = [];
+  let cur = "";
+  for (const w of words) { if ((cur + " " + w).trim().length > max && cur) { lines.push(cur); cur = w; } else cur = (cur + " " + w).trim(); }
+  if (cur) lines.push(cur);
+  return lines.slice(0, 3);
+}
+
+function nodeSvg(n) {
+  const cx = n.x + n.w / 2, cy = n.y + n.h / 2, label = wrap(n.name, n.type === "task" ? 20 : 14);
+  const tx = (lines, y0, dy) => lines.map((l, i) => `<text x="${cx}" y="${y0 + i * dy}" text-anchor="middle">${esc(l)}</text>`).join("");
+  let shape, text;
+  if (n.type === "task") {
+    shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="10"/>`;
+    text = tx(label, cy - (label.length - 1) * 7.5 + 4, 15);
+  } else if (n.type === "gateway") {
+    const r = n.h / 2;
+    shape = `<polygon points="${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}"/><text x="${cx}" y="${cy + 5}" text-anchor="middle" style="font-size:18px">×</text>`;
+    text = tx(label, n.y + n.h + 14, 13);
+  } else {
+    shape = `<circle cx="${cx}" cy="${cy}" r="${n.h / 2 - 8}" class="${n.type === "end" ? "end" : ""}"/>`;
+    text = tx(label, n.y + n.h + 6, 13);
+  }
+  const open = n.conflicts.filter(c => c.status === "open").length;
+  const badge = open ? `<circle class="badge-c" cx="${n.x + n.w - 2}" cy="${n.y + 2}" r="9"/><text x="${n.x + n.w - 2}" y="${n.y + 6}" text-anchor="middle" style="fill:#fff;font-size:11px;font-weight:700">${open}</text>` : "";
+  const status = n.procedure ? ` (${n.status})` : "";
+  return `<g class="node ${n.procedure ? "has-proc" : ""}" style="--sc:${sc(n.status)}" tabindex="0" role="button"
+     data-node="${esc(n.id)}" aria-label="${esc(n.type)} ${esc(n.name)}${esc(status)}${open ? `, ${open} open conflicts` : ""}">${shape}${text}${badge}</g>`;
+}
+
+function render() {
+  $("#title").textContent = D.title;
+  document.title = `${D.title} · process explorer`;
+  const v = D.verification.map(x => `<span class="pill" style="--sc:${sc(x.passed ? "verified" : "stale")}">${esc(x.procedure)} (${esc(x.lang)}) ${x.passed ? "verified" : "failed at " + esc(x.failed_at)}</span> ${esc(x.started)}`).join(" ");
+  $("#meta").innerHTML = `${v || "No grounding run yet"} · ${D.open_conflicts} open conflict(s) · ${D.review} to review
+    <span class="legend">${["verified", "stale", "reviewed", "proposed"].map(s => `<span style="--c:${sc(s)}">${s}</span>`).join("")}</span>`;
+  $("#maps").innerHTML = D.processes.map(p => {
+    const L = p.layout;
+    const lanes = L.lanes.map((ln, i) => `<rect class="lane-bg" x="8" y="${L.top + i * L.lane_h + 3}" width="${L.width - 16}" height="${L.lane_h - 6}" rx="8"/>
+       <text class="lane-label" x="20" y="${L.top + i * L.lane_h + L.lane_h / 2 + 4}">${esc(ln || "—")}</text>`).join("");
+    const edges = L.edges.map(e => `<path class="edge ${e.back ? "back" : ""}" d="${e.d}" marker-end="url(#arr-${esc(p.id)})"/>` +
+      (e.label ? (() => { const m = e.d.match(/[\d.]+,[\d.]+/g); const [x, y] = m[Math.floor(m.length / 2)].split(","); return `<text class="edge-label" x="${+x + 4}" y="${+y - 6}">${esc(e.label)}</text>`; })() : "")).join("");
+    const token = L.main ? `<circle class="token" r="6"><animateMotion dur="${Math.max(4, L.edges.length * 1.1)}s" repeatCount="indefinite" path="${L.main}"/></circle>` : "";
+    return `<section class="map"><h2>${esc(p.name)} <span class="sub">${esc(p.id)}</span></h2>
+      <svg viewBox="0 0 ${L.width} ${L.height}" width="${L.width}" height="${L.height}" role="group" aria-label="${esc(p.name)} process map">
+        <defs><marker id="arr-${esc(p.id)}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--edge)"/></marker></defs>
+        ${lanes}${edges}${p.nodes.map(nodeSvg).join("")}${token}</svg></section>`;
+  }).join("");
+}
+
+function evidence(list) {
+  if (!list.length) return "";
+  return `<details><summary>Evidence (${list.length})</summary>${list.map(e => `<div class="ev">
+    ${e.image ? `<img src="${esc(e.image)}" alt="${esc(e.kind)} ${esc(e.locator || "")}" loading="lazy">` : ""}
+    <div><div>${esc(e.kind)} · ${esc(e.source || "")} ${esc(e.locator || "")}</div>${e.label ? `<div>${esc(e.label)}</div>` : ""}${e.uri ? `<code>${esc(e.uri)}</code>` : ""}</div></div>`).join("")}</details>`;
+}
+
+function select(proc, nodeId) {
+  document.querySelectorAll(".node").forEach(g => g.classList.toggle("sel", g.dataset.node === nodeId));
+  const p = D.processes.find(x => x.nodes.some(n => n.id === nodeId));
+  const n = p.nodes.find(x => x.id === nodeId);
+  const pr = n.procedure ? D.procedures[n.procedure] : null;
+  const conflicts = n.conflicts.map(c => `<div class="conflict ${c.status}">${c.status === "open" ? "Conflict" : "Resolved"}: ${esc(c.summary)}</div>`).join("");
+  const outs = n.out.length ? `<div class="sub">Next: ${n.out.map(o => `${esc((p.nodes.find(x => x.id === o.to) || {}).name || o.to)}${o.when ? ` (${esc(o.when)})` : ""}`).join(" · ")}</div>` : "";
+  let body;
+  if (pr) {
+    const links = [pr.links.replay ? `<a href="${esc(pr.links.replay)}">Practise it (click-along)</a>` : "",
+                   pr.links.video ? `<a class="ghost" href="${esc(pr.links.video)}">Watch the video</a>` : ""].join("");
+    body = `<div class="actions">${links}</div>
+      ${pr.steps.map(s => `<div class="step"><div class="step-h"><b>${esc(s.id)}</b><span class="pill" style="--sc:${sc(s.status)}">${esc(s.status)}</span></div>
+        <div>${esc(s.say)}</div>${s.result ? `<div class="sub">→ ${esc(s.result)}</div>` : ""}
+        ${s.gif ? `<img class="gif" src="${esc(s.gif)}" alt="${esc(s.say)}" loading="lazy">` : ""}
+        ${evidence(s.evidence)}</div>`).join("")}`;
+  } else {
+    body = `<p class="empty">${n.type === "task" ? "No procedure documents this task yet." : ""}</p>${evidence(n.evidence)}`;
+  }
+  $("#panel").innerHTML = `<h3>${esc(n.name || n.type)}</h3>
+    <div class="sub">${esc(n.lane || "")} ${pr ? `· <span class="pill" style="--sc:${sc(pr.status)}">${esc(pr.status)}</span> · ${esc(pr.title)}` : ""}</div>
+    ${outs}${conflicts}${body}`;
+  try { localStorage.setItem("mm-explorer-node", nodeId); } catch (_) {}
+}
+
+document.addEventListener("click", e => { const g = e.target.closest(".node"); if (g) select(null, g.dataset.node); });
+document.addEventListener("keydown", e => { const g = e.target.closest?.(".node"); if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); select(null, g.dataset.node); } });
+render();
+let first = null;
+try { first = localStorage.getItem("mm-explorer-node"); } catch (_) {}
+const all = D.processes.flatMap(p => p.nodes);
+const pick = all.find(n => n.id === first) || all.find(n => n.procedure);
+if (pick) select(null, pick.id);
+</script>
+</body>
+</html>

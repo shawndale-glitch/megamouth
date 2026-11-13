@@ -35,11 +35,13 @@ FAKE_RUNNER = textwrap.dedent("""
         bad = bool(fail_on) and fail_on in str(st["say"])
         shot = f"shots/{st['id']}{'-fail' if bad else ''}.png"
         (run_dir / shot).write_bytes(b"\\x89PNG fake " + st["id"].encode())
-        steps.append({"id": st["id"], "status": "fail" if bad else "pass",
-                      "error": "could not find it" if bad else "", "shot": shot})
+        box = {"x": 100.0 + 40 * len(steps), "y": 120.0, "width": 90.0, "height": 40.0} if "target" in st["do"] else None
+        steps.append({"id": st["id"], "status": "fail" if bad else "pass", "start": 2.0 * len(steps),
+                      "voice": 1.5, "box": box, "error": "could not find it" if bad else "", "shot": shot})
         failed = bad
     (run_dir / "run.json").write_text(json.dumps({"passed": not failed, "started": "2026-11-13T10:00:00",
-                                                  "seconds": 1.0, "steps": steps}))
+                                                  "seconds": 1.0, "steps": steps, "captions": False,
+                                                  "viewport": {"width": 640, "height": 360}}))
     sys.exit(1 if failed else 0)
 """)
 

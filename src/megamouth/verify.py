@@ -53,7 +53,27 @@ class VerifyReport:
 def _command(ws: Workspace, spec_file: Path, lang: str, out: Path) -> list[str]:
     tpl = ws.config.get("ground", {}).get("command", DEFAULT_COMMAND)
     py = os.environ.get("DEMOSHARK_PYTHON", sys.executable)
-    return [a.format(python=py, spec=str(spec_file), lang=lang, out=str(out)) for a in tpl]
+    cmd = [a.format(python=py, spec=str(spec_file), lang=lang, out=str(out)) for a in tpl]
+    # A clean recording (no caption bar) lets the motion renderer zoom and caption it afterwards.
+    if "--captions" not in cmd and _supports_captions_flag(tuple(cmd[:4])):
+        cmd += ["--captions", "none"]
+    return cmd
+
+
+_probe: dict[tuple, bool] = {}
+
+
+def _supports_captions_flag(head: tuple) -> bool:
+    """DEMOShark versions before step boxes don't know --captions; ask its --help once."""
+    if "demoshark" not in head:   # a custom runner: leave its arguments alone
+        return False
+    if head not in _probe:
+        try:
+            r = subprocess.run([*head, "--help"], capture_output=True, text=True, timeout=60)
+            _probe[head] = "--captions" in r.stdout
+        except (OSError, subprocess.TimeoutExpired):
+            _probe[head] = False
+    return _probe[head]
 
 
 def verify(ws: Workspace, spec: LivingSpec, procedures: list[str] | None = None,
@@ -83,10 +103,15 @@ def verify(ws: Workspace, spec: LivingSpec, procedures: list[str] | None = None,
                                                 f"{(proc_run.stderr or proc_run.stdout)[-400:]}"))
                 continue
             run = json.loads(run_json.read_text(encoding="utf-8"))
+            rel = lambda p: os.path.relpath(p, runs_dir)   # committed run files never carry a machine path
+            lang_dir = run_json.parent
             ground = {
                 "megamouth_ground": 1,
                 "procedure": proc.id, "lang": lang, "passed": bool(run["passed"]),
                 "started": run.get("started", ""), "seconds": run.get("seconds"),
+                "viewport": run.get("viewport") or {}, "captions": run.get("captions", True),
+                "media": {k: rel(lang_dir / f) for k, f in (("recording", "recording.webm"),
+                          ("video", "walkthrough.mp4"), ("subtitles", "walkthrough.vtt")) if (lang_dir / f).exists()},
                 "runner": " ".join(a for a in cmd[1:4] if not a.startswith("/")),
                 "steps": [{
                     "step": low.step_map.get(s["id"], s["id"]),
@@ -94,8 +119,9 @@ def verify(ws: Workspace, spec: LivingSpec, procedures: list[str] | None = None,
                     "status": s["status"],
                     "error": s.get("error", ""),
                     "fingerprint": low.fingerprints.get(low.step_map.get(s["id"], s["id"]), ""),
-                    # relative to runs/, so committed run files never carry a machine path
-                    "shot": os.path.relpath(run_json.parent / s["shot"], runs_dir) if s.get("shot") else "",
+                    "shot": rel(lang_dir / s["shot"]) if s.get("shot") else "",
+                    "box": s.get("box"), "start": s.get("start"), "voice": s.get("voice"),
+                    "action": next((x["do"]["action"] for x in low.data["steps"] if x["id"] == s["id"]), ""),
                 } for s in run["steps"]],
             }
             dest = runs_dir / f"{proc.id}.{lang}.ground.json"

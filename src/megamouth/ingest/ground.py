@@ -46,7 +46,10 @@ class GroundRunIngester:
             "procedure": proc, "lang": lang, "passed": bool(d["passed"]),
             "started": d.get("started", ""), "seconds": d.get("seconds"),
             "failed_at": failed["step"] if failed else "", "error": failed["error"] if failed else "",
-            "runner": d.get("runner", "")})
+            "runner": d.get("runner", ""), "viewport": d.get("viewport") or {}, "captions": d.get("captions", True),
+            # media stay where the run left them (build/, not in git); paths are relative to runs/
+            "media": {k: str((path.parent / v).resolve()) for k, v in (d.get("media") or {}).items()
+                      if (path.parent / v).exists()}})
         for s in d["steps"]:
             shot = ""
             if s.get("shot"):
@@ -55,4 +58,5 @@ class GroundRunIngester:
                     shot = ctx.store.put_blob(p.read_bytes(), p.suffix)
             yield ev(f"step:{s['step']}", "ground.step", {
                 "procedure": proc, "lang": lang, "step": s["step"], "status": s["status"],
-                "error": s.get("error", ""), "fingerprint": s["fingerprint"], "shot": shot})
+                "error": s.get("error", ""), "fingerprint": s["fingerprint"], "shot": shot,
+                "box": s.get("box"), "start": s.get("start"), "voice": s.get("voice"), "action": s.get("action", "")})

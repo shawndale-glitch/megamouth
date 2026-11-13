@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Click-along replay</title>
+<style>
+:root { --bg: #f4f3ef; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #e3e2dd;
+        --accent: #ff6b57; --ok: #1a7f37; --shade: rgba(20, 20, 18, .5); }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #141413; --panel: #1e1e1c; --ink: #ecebe6; --muted: #a3a29b; --line: #34332f; --ok: #3fb950; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 16px; }
+.top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.top h1 { font-size: 17px; margin: 0; flex: 1; min-width: 200px; }
+.top a, .top button { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; text-decoration: none; cursor: pointer; }
+.bar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
+.bar i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+.say { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; gap: 10px; align-items: baseline; }
+.say b { background: var(--accent); color: #fff; border-radius: 5px; padding: 0 7px; font-size: 13px; white-space: nowrap; }
+.say .hint { margin-left: auto; color: var(--muted); font-size: 13px; white-space: nowrap; }
+.stage { position: relative; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: #fff; cursor: crosshair; user-select: none; }
+.stage img { display: block; width: 100%; height: auto; pointer-events: none; }
+.hot { position: absolute; border: 3px solid var(--accent); border-radius: 8px; pointer-events: none; opacity: 0; transition: opacity .2s; }
+.hot.show { opacity: 1; animation: pulse 1s ease-in-out 3; }
+.hot.good { opacity: 1; border-color: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 30%, transparent); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 25%, transparent); } }
+.typed { position: absolute; font: 14px system-ui, sans-serif; color: #1d1d1b; pointer-events: none; padding-left: 10px; display: flex; align-items: center; }
+.miss { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 2px solid var(--accent); pointer-events: none; animation: fade .6s forwards; }
+@keyframes fade { to { transform: scale(2); opacity: 0; } }
+.result { min-height: 24px; color: var(--ok); font-size: 14px; margin-top: 8px; }
+.cont { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 8px 16px; font: inherit; cursor: pointer; }
+.done { text-align: center; padding: 48px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.done h2 { margin: 0 0 6px; }
+.done p { color: var(--muted); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1 id="title"></h1>
+    <button id="voice" aria-pressed="false">🔈 Narration off</button>
+    <a id="video" hidden>Watch the video</a>
+    <a href="../index.html">Process explorer</a>
+  </div>
+  <div class="bar"><i id="prog" style="width:0"></i></div>
+  <div class="say"><b id="num"></b><span id="say"></span><span class="hint" id="hint"></span></div>
+  <div id="main"></div>
+  <div class="result" id="result" aria-live="polite"></div>
+  <div class="sr" aria-live="polite" id="live"></div>
+</div>
+<script>
+const D = /*DATA*/null;
+const $ = s => document.querySelector(s);
+let i = 0, misses = 0, speak = false, locked = false;
+try { speak = localStorage.getItem("mm-replay-voice") === "1"; } catch (_) {}
+const W = D.viewport.width || 1280, H = D.viewport.height || 720, PAD = 10;
+
+function say(text) {
+  if (!speak || !("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text); u.lang = D.lang; speechSynthesis.speak(u);
+}
+function voiceBtn() { $("#voice").textContent = speak ? "🔊 Narration on" : "🔈 Narration off"; $("#voice").setAttribute("aria-pressed", speak); }
+
+function show() {
+  const s = D.steps[i];
+  locked = false;
+  $("#prog").style.width = `${(i / D.steps.length) * 100}%`;
+  $("#num").textContent = `${i + 1}/${D.steps.length}`;
+  $("#say").textContent = s.say;
+  $("#result").textContent = "";
+  $("#hint").textContent = s.box ? (s.action === "fill" ? "Click the box to type" : "Click the control") : "";
+  const b = s.box;
+  const pct = (v, of) => `${(v / of) * 100}%`;
+  $("#main").innerHTML = `<div class="stage" id="stage" role="img" aria-label="${s.say.replace(/"/g, "&quot;")}">
+      <img src="${s.img}" alt="">
+      ${b ? `<div class="hot" id="hot" style="left:${pct(b.x - 4, W)};top:${pct(b.y - 4, H)};width:${pct(b.width + 8, W)};height:${pct(b.height + 8, H)}"></div>
+             <div class="typed" id="typed" style="left:${pct(b.x, W)};top:${pct(b.y, H)};width:${pct(b.width, W)};height:${pct(b.height, H)}"></div>` : ""}
+      ${b ? "" : `<button class="cont" id="cont">Continue</button>`}
+    </div>`;
+  $("#live").textContent = s.say;
+  say(s.say);
+  if (!b) $("#cont").focus();
+}
+
+function next() {
+  i += 1;
+  if (i >= D.steps.length) return finish();
+  show();
+}
+
+function good() {
+  const s = D.steps[i];
+  locked = true;
+  const hot = $("#hot"); if (hot) { hot.classList.remove("show"); hot.classList.add("good"); }
+  // test data is created per run, so show what the placeholder means rather than a stale value
+  if (s.action === "fill" && s.value) $("#typed").textContent = s.value.replace(/\{\{\s*(\w+)\.(\w+)\s*\}\}/g, (_, o, f) => `‹${o} ${f}›`);
+  $("#result").textContent = s.result ? `✓ ${s.result}` : "✓";
+  setTimeout(next, 1100);
+}
+
+function finish() {
+  $("#prog").style.width = "100%";
+  $("#num").textContent = "✓"; $("#say").textContent = D.title; $("#hint").textContent = "";
+  $("#result").textContent = "";
+  $("#main").innerHTML = `<div class="done"><h2>Done: ${D.title}</h2>
+    <p>${D.steps.length} steps · ${misses === 0 ? "no missed clicks" : misses + " missed click" + (misses > 1 ? "s" : "")}</p>
+    <div class="top" style="justify-content:center"><button id="again">Practise again</button>
+    ${D.video ? `<a href="${D.video}">Watch the video</a>` : ""}<a href="../index.html">Back to the process</a></div></div>`;
+  $("#again").onclick = () => { i = 0; misses = 0; show(); };
+  say(D.title);
+}
+
+document.addEventListener("click", e => {
+  if (e.target.id === "voice") { speak = !speak; try { localStorage.setItem("mm-replay-voice", speak ? "1" : "0"); } catch (_) {} voiceBtn(); if (speak) say(D.steps[i]?.say || ""); return; }
+  if (e.target.id === "cont") return next();
+  const stage = e.target.closest("#stage"); if (!stage || locked) return;
+  const s = D.steps[i]; if (!s.box) return;
+  const r = stage.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+  const b = s.box;
+  if (x >= b.x - PAD && x <= b.x + b.width + PAD && y >= b.y - PAD && y <= b.y + b.height + PAD) return good();
+  misses += 1;
+  const m = document.createElement("div"); m.className = "miss";
+  m.style.left = `${(e.clientX - r.left) / r.width * 100}%`; m.style.top = `${(e.clientY - r.top) / r.height * 100}%`;
+  stage.appendChild(m); setTimeout(() => m.remove(), 700);
+  const hot = $("#hot"); hot.classList.remove("show"); void hot.offsetWidth; hot.classList.add("show");
+  $("#result").textContent = "";
+  $("#live").textContent = "Not there. The control is highlighted.";
+});
+document.addEventListener("keydown", e => { if (e.key === "Enter" && $("#cont")) next(); });
+
+document.title = `${D.title} · click-along`;
+$("#title").textContent = D.title;
+if (D.video) { $("#video").href = D.video; $("#video").hidden = false; }
+voiceBtn();
+show();
+</script>
+</body>
+</html>

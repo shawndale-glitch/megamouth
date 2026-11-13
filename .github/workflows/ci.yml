@@ -53,6 +53,14 @@ jobs:
         run: |
           uv run megamouth verify | tee verify.log
           grep -q "6 step(s): 6 verified" verify.log
+      - name: Render the site (explorer, click-along replay, smart-zoom video, GIFs)
+        working-directory: examples/paydesk
+        run: |
+          uv run megamouth render | tee render.log
+          test -s build/site/index.html
+          test -s build/site/replay/approve-an-invoice.en.html
+          test -s build/site/media/approve-an-invoice.en.mp4
+          ls build/site/media/approve-an-invoice.en.S*.gif
       - name: A changed SOP step must turn stale
         working-directory: examples/paydesk
         run: |
@@ -70,6 +78,7 @@ jobs:
         with:
           name: walkthrough
           path: |
+            examples/paydesk/build/site/
             examples/paydesk/build/ground/out/
             examples/paydesk/runs/
             examples/paydesk/spec/proposed/paydesk.yaml

@@ -212,6 +212,30 @@ def watch(
 
 
 @app.command()
+def render(
+    names: Optional[list[str]] = typer.Argument(None, help="motion, replay, explorer (default: all)"),
+    workspace: Path = WS,
+):
+    """Render outputs into build/site/: smart-zoom video and GIFs, click-along replay, process explorer."""
+    from megamouth import pipeline
+    from megamouth.render import render as run_render
+
+    ws = _ws(workspace)
+    path = pipeline.proposed_path(ws, pipeline.spec_id(ws))
+    if not path.exists():
+        con.print("[red]no proposed spec yet: run `megamouth synth` first[/red]")
+        raise typer.Exit(2)
+    written, log = run_render(ws, specmod.load(path), names)
+    for line in log:
+        con.print(f"  [yellow]![/yellow] {escape(line)}")
+    for p in written:
+        con.print(f"  [green]+[/green] {p.relative_to(ws.root)}")
+    site = ws.root / "build" / "site" / "index.html"
+    if site.exists():
+        con.print(f"Open [bold]{site}[/bold]")
+
+
+@app.command()
 def review(workspace: Path = WS, port: int = typer.Option(8790, "--port"), host: str = "127.0.0.1"):
     """Open the review console: resolve conflicts, accept review items, correct steps."""
     try:
