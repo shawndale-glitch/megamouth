@@ -2,6 +2,15 @@ name: ci
 on:
   push: { branches: [main] }
   pull_request:
+  workflow_dispatch:
+    inputs:
+      demoshark_ref:
+        description: DEMOShark branch, tag or commit to test against
+        default: main
+      render:
+        description: Render the site (video, GIFs, replay)
+        type: boolean
+        default: true
 jobs:
   megamouth:
     runs-on: ubuntu-24.04
@@ -40,8 +49,12 @@ jobs:
 
       # Prove the lowered spec with DEMOShark itself: its rules, then a real run against Paydesk
       - name: Install DEMOShark
+        env: { DEMOSHARK_REF: "${{ inputs.demoshark_ref || 'main' }}" }
         run: |
-          git clone --depth 1 https://github.com/shawndale-glitch/demoshark.git ../demoshark
+          git init -q ../demoshark
+          git -C ../demoshark fetch -q --depth 1 https://github.com/shawndale-glitch/demoshark.git "$DEMOSHARK_REF"
+          git -C ../demoshark checkout -q FETCH_HEAD
+          echo "DEMOShark $DEMOSHARK_REF at $(git -C ../demoshark rev-parse --short HEAD)" | tee -a "$GITHUB_STEP_SUMMARY"
           python -m venv ../ds && ../ds/bin/pip install -q -e ../demoshark
           sudo apt-get install -y fonts-noto-core || true
           ../ds/bin/python -m playwright install --with-deps chromium
@@ -54,6 +67,7 @@ jobs:
           uv run megamouth verify | tee verify.log
           grep -q "6 step(s): 6 verified" verify.log
       - name: Render the site (explorer, click-along replay, smart-zoom video, GIFs)
+        if: github.event_name != 'workflow_dispatch' || inputs.render
         working-directory: examples/paydesk
         run: |
           uv run megamouth render | tee render.log
