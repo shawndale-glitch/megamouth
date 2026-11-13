@@ -61,3 +61,5 @@ Plugins register through entry points (`megamouth.ingest`), so a new source fami
 ```bash
 uv run pytest
 ```
+
+Design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

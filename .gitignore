@@ -8,5 +8,3 @@ cache/
 manual/
 .env
 .DS_Store
-# internal design notes stay local until sanitized
-docs/ARCHITECTURE.md
