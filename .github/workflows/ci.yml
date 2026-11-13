@@ -51,9 +51,15 @@ jobs:
       - name: Install DEMOShark
         env: { DEMOSHARK_REF: "${{ inputs.demoshark_ref || 'main' }}" }
         run: |
+          url=https://github.com/shawndale-glitch/demoshark.git
           git init -q ../demoshark
-          git -C ../demoshark fetch -q --depth 1 https://github.com/shawndale-glitch/demoshark.git "$DEMOSHARK_REF"
-          git -C ../demoshark checkout -q FETCH_HEAD
+          # branches, tags and full commit ids fetch shallow; a short commit id needs the history
+          if git -C ../demoshark fetch -q --depth 1 "$url" "$DEMOSHARK_REF"; then
+            git -C ../demoshark checkout -q FETCH_HEAD
+          else
+            git -C ../demoshark fetch -q "$url" '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
+            git -C ../demoshark checkout -q "$DEMOSHARK_REF"
+          fi
           echo "DEMOShark $DEMOSHARK_REF at $(git -C ../demoshark rev-parse --short HEAD)" | tee -a "$GITHUB_STEP_SUMMARY"
           python -m venv ../ds && ../ds/bin/pip install -q -e ../demoshark
           sudo apt-get install -y fonts-noto-core || true
