@@ -18,7 +18,7 @@ DEMOShark already proved the back half: **one spec → many outputs, and the bui
  Figma / FigJam ─────────┤    │  EVIDENCE    │   │  LIVING   │   ├─► Process Explorer (animated BPMN)
  BPMN / drawio / vsdx ───┼──► │  GRAPH       │──►│  SPEC     │──►├─► Interactive replay (rrweb-style)
  mermaid / plantuml ─────┤    │ (atoms with  │   │ (canonical│   ├─► In-app tours (overlay JSON)
- screen recordings / GIF ┤    │  provenance) │   │  IR, YAML)│   ├─► Motion explainers (Remotion)
+ screen recordings / GIF ┤    │  provenance) │   │  IR, YAML)│   ├─► Motion video (ffmpeg + Motion Canvas)
  voice notes / meetings ─┤    └──────┬───────┘   └─────┬─────┘   ├─► Docs site pages (Zensical)
  Jira / tickets / chat ──┤           │ synthesize      │ verify  ├─► Ask-the-docs (RAG/MCP)
  live app (DOM, a11y, ───┘           ▼                 ▼         └─► Lowered specs (demoshark:1,
@@ -148,7 +148,7 @@ megamouth/
 │   ├── explorer/         # web app: animated process map → drill into step → play clip
 │   ├── replay/           # interactive "click-along" replay from DOM snapshots
 │   ├── tours/            # in-app overlay tours (Driver.js / Shepherd.js JSON)
-│   ├── motion/           # Remotion compositions: explainer animations, smart zoom, GIFs
+│   ├── motion/           # ffmpeg filter graphs (smart zoom, spotlight, captions, GIFs) + Motion Canvas scenes (explainers)
 │   ├── site/             # Zensical / MkDocs pages with embedded media
 │   └── assistant/        # RAG index + MCP server: "how do I…?" answered from the spec
 ├── review/               # human-in-the-loop console (FastAPI + small web UI)
@@ -204,7 +204,7 @@ Ranked by **wow per unit of risk**. The first three are realistic within a POC.
 
 1. **Process Explorer (living process map).** An animated BPMN / swimlane view (bpmn-js or React Flow). Tokens flow through the process; click any task to see its narrated clip, its guide steps, its rules and its *evidence trail* (which recording, which SOP row). Status badges come from the last grounding run: ✅ verified 2 h ago, ⚠ stale since the Figma change.
 2. **Click-along replay.** Instead of a passive video, the viewer replays real DOM snapshots (recorded with rrweb during the grounding run). They must click the highlighted control to advance, with narration paced to them. It is a simulator built for free from the test run, without access to the real system.
-3. **Smart-zoom motion video.** Remotion compositions driven by the spec's `media:` intent: cursor smoothing, auto zoom to the active region, spotlight, captions, chapter cards, a brand intro. It is the "Screen Studio" look, generated, and re-renders on drift. Exports MP4, GIF snippets per step and vertical shorts.
+3. **Smart-zoom motion video.** Rendered from the spec's `media:` intent with no paid licence (see §8.6): cursor smoothing, auto zoom to the active region, spotlight, captions, chapter cards, a brand intro. It is the "Screen Studio" look, generated, and re-renders on drift. Exports MP4, GIF snippets per step and vertical shorts.
 4. **In-app tours.** The same steps lowered to overlay JSON (Driver.js / Shepherd.js) and injected into a training environment. Docs move *into* the product.
 5. **Ask-the-process.** An MCP server and RAG index over the spec plus evidence. "What happens if the amounts don't match?" is answered from gateway G1, with the clip at 00:15 and the source cited. Answers are grounded or refused, never invented.
 6. **Personas and languages as compile flags.** `--persona new-hire --lang es` changes depth, pacing, glossary pop-ups and voice. Translation comes from the spec (a "translate" option), never by re-recording by hand.
@@ -247,7 +247,7 @@ evidence ──synth──► proposed ──review──► reviewed ──grou
 |---|---|---|
 | Language | **Python 3.12** (3.11 minimum) | Material for MkDocs 9.8 already needs ≥3.11 |
 | Package manager | **uv** (lockfile, fast, extras) | Run as `python -m …`: `.exe` shims may be blocked on managed Windows machines |
-| JS runtime | **Node 20 LTS+** | Remotion, bpmn-js builds, mermaid-cli, the explorer front-end |
+| JS runtime | **Node 20 LTS+** | Motion Canvas (optional), bpmn-js builds, mermaid-cli, the explorer front-end |
 | Media | **ffmpeg** (system, or `imageio-ffmpeg` fallback) | Already in use |
 | Browser automation | **Playwright** (Python) | Managed Windows machines may block bundled Chromium → `PW_CHANNEL=chrome` |
 | Office conversion | **LibreOffice headless** | vsdx / ppt / doc → open formats; optional |
@@ -271,12 +271,12 @@ app      = ["playwright"]
 voice    = ["edge-tts"]                                          # + SAPI fallback; Piper for offline
 index    = ["lancedb"]                                           # or sqlite-vec; vectors for align + RAG
 serve    = ["fastapi", "uvicorn", "mcp"]                         # review console, API, MCP server
-render   = ["python-pptx"]                                       # Remotion/explorer are Node packages
+render   = ["python-pptx"]                                       # Motion Canvas/explorer are Node packages
 all      = ["megamouth[core,llm,docs,diagrams,av,app,voice,index,serve,render]"]
 ```
 
 ### 8.3 Node packages (render side, in `render/web/`)
-`remotion` + `@remotion/renderer` (motion video), `bpmn-js` or `reactflow` (explorer), `rrweb` + `rrweb-player` (click-along replay), `driver.js` (tours), `@mermaid-js/mermaid-cli`.
+`@motion-canvas/core` + `@motion-canvas/2d` (MIT; explainer animations only), `bpmn-js` or `reactflow` (explorer), `rrweb` + `rrweb-player` (click-along replay), `driver.js` (tours), `@mermaid-js/mermaid-cli`.
 
 ### 8.4 External services and credentials (all optional, all gated)
 
@@ -294,12 +294,28 @@ all      = ["megamouth[core,llm,docs,diagrams,av,app,voice,index,serve,render]"]
 
 | Risk | Detail | Mitigation |
 |---|---|---|
-| **Licences** | PyMuPDF is **AGPL**; some pyannote models are gated; Remotion needs a **company licence** above a small headcount | Prefer Docling / pypdf; review the Remotion terms before company use; keep AGPL out of core |
+| **Licences** | PyMuPDF is **AGPL**; some pyannote models are gated; Remotion needs a **company licence** above a small headcount | Prefer Docling / pypdf; no Remotion (see §8.6); keep AGPL out of core |
 | **Cloud data egress** | Recordings and SOPs may contain personal data | `policy.py`: per-source `cloud: allowed/denied`; redaction before any model call; local ASR and OCR by default |
 | **Application allow-listing** | Blocks unsigned binaries (bundled chromium, `.exe` shims, native DLLs) | `doctor` detects it; use the installed Chrome; `python -m` everywhere |
 | **Model drift** | Extraction quality changes with model versions | Pin model IDs in config; golden-set eval in CI (see §10) |
 | **Heavy installs** | torch (via whisper and pyannote) is GBs | `av` extra is opt-in; a CPU-only wheel index option |
 | **Sanitization** | Public core vs internal use | The core and the fictional demo (Paydesk) are public, like DEMOShark; organisation-specific rule packs and specs live in separate internal packages; scan for organisation terms before any public commit |
+
+### 8.6 Motion video without Remotion
+
+Remotion needs a paid company licence above a small headcount, and we are not buying one. Every effect in §6 item 3 can be produced with tools that need no licence, split by job:
+
+| Job | Tool | How |
+|---|---|---|
+| Smart zoom to the active region | **ffmpeg** (LGPL/GPL binary, called as a process) | `zoompan` / `crop`+`scale` with eased keyframes computed in Python from each step's target box (from the grounding run's bounding boxes) |
+| Spotlight / ring on the control | ffmpeg | `drawbox` or an alpha mask PNG (Pillow) composited with `overlay`, faded via `enable='between(t,a,b)'` |
+| Cursor smoothing | Python | resample the recorded pointer path with a Catmull-Rom spline; draw the cursor sprite with `overlay` at interpolated positions |
+| Captions | ffmpeg | the WebVTT/ASS file DEMOShark already writes, burned in with `subtitles=` (ASS styles give brand fonts and colours) |
+| Chapter cards, brand intro and outro | Pillow → PNG, or **Motion Canvas** (MIT) for animated ones | rendered once per brand and language, then concatenated |
+| Explainer animations (process tokens moving through lanes) | **Motion Canvas** (MIT, TypeScript) | scenes generated from `processes`, rendered headless to an image sequence, then encoded by ffmpeg |
+| GIF per step, vertical shorts | ffmpeg | `palettegen`/`paletteuse`; `crop` to 9:16 around the zoom target |
+
+`render/motion/` therefore emits an **ffmpeg filter-graph plan** per step (pure data, so it is testable and cacheable by hash) and runs ffmpeg. Motion Canvas is an optional Node extra used only for explainers. Nothing in the core depends on it. If a Remotion licence is bought later, it becomes one more `RenderPlugin` consuming the same `media:` intent; nothing else changes.
 
 ---
 
@@ -327,7 +343,7 @@ all      = ["megamouth[core,llm,docs,diagrams,av,app,voice,index,serve,render]"]
 |---|---|---|
 | **P0 · Spike (≈2 wks)** | Core, Evidence, Spec models; 3 ingesters: **SOP xls**, **screen recording MP4**, **FigJam/BPMN**; `synth` for procedures only; `lower --to demoshark:1`; render through DEMOShark | Recording + SOP → executable spec → narrated video, with an evidence trail |
 | **P1 · Living** | Grounding runs, stale/verified status, watchers (Figma version, file drop), semantic-diff PRs, review console v0 | The "living" loop |
-| **P2 · Immersive** | Process Explorer, click-along replay (rrweb), Remotion smart-zoom, GIF per step | The wow outputs |
+| **P2 · Immersive** | Process Explorer, click-along replay (rrweb), ffmpeg smart-zoom, GIF per step | The wow outputs |
 | **P3 · Breadth** | Docs, Confluence, Jira, voice meetings, live-app crawl, vsdx | "Anything in" |
 | **P4 · Scale** | MCP server, assistant, personas, tours, orchestration server, multi-team | Platform |
 
@@ -340,5 +356,5 @@ The P0 spike can run entirely on the **fictional Paydesk app** from DEMOShark, s
 1. **Public first.** Megamouth is a public portfolio repository alongside DEMOShark, using the fictional Paydesk domain. Organisation-specific rule packs come later as separate internal packages.
 2. **P0 inputs.** SOP spreadsheets, screen recordings, and FigJam / BPMN diagrams.
 3. **Cloud models.** Allowed for the fictional demo data, after the policy check in `core/workspace.py`. Real sources stay local-only until cleared.
-4. **Remotion licence.** Open; decide before P2.
+4. **No Remotion licence.** Motion video uses a licence-free stack instead: ffmpeg filter graphs for smart zoom, spotlight, captions and GIFs, and Motion Canvas (MIT) for explainer animations. See §8.6.
 5. **Name.** Megamouth.
