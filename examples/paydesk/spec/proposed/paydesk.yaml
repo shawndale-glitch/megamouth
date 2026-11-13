@@ -347,28 +347,24 @@ provenance:
     uri: inbox/approve-invoice-training.mp4
     sha256: 5b08f2b6b256bb7f23c10db2a1a446ab956fbbc98f44990d1a5d5084188d559f
     adapter: av.screenrec@0.1
-    ingested_at: '2026-11-13T12:28:24+00:00'
     cloud: true
   - id: invoice-approval
     kind: figjam
     uri: inbox/invoice-approval.board.json
     sha256: 8e7871c943c555c4f46c1b6a3f4a165458e3efed45c7a67345b56b268876f0aa
     adapter: diagrams.figjam@0.1
-    ingested_at: '2026-11-13T12:28:24+00:00'
     cloud: true
   - id: p2p-invoice-approval
     kind: bpmn
     uri: inbox/p2p-invoice-approval.bpmn
     sha256: 0ac74d71fa663d2d6a4bbe49642339633df80dd5f66eab63e01c2c7e1f939f4f
     adapter: diagrams.bpmn@0.1
-    ingested_at: '2026-11-13T12:28:24+00:00'
     cloud: true
   - id: paydesk-sop
     kind: sheet
     uri: inbox/paydesk-sop.csv
     sha256: 5eafa4a12a24d0690ae8c3bc4046482b0528a71c6ac37133e5dbf408e0fbd8f1
     adapter: sheets.sop@0.1
-    ingested_at: '2026-11-13T12:28:24+00:00'
     cloud: true
   conflicts:
   - id: C1

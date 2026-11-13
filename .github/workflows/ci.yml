@@ -1,0 +1,64 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  megamouth:
+    runs-on: ubuntu-24.04
+    defaults:
+      run: { shell: bash }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install
+        run: uv sync --extra llm --extra sheets --extra av
+      - name: Tests
+        run: uv run pytest -q
+      - name: Plugin requirements
+        run: uv run megamouth doctor
+
+      # The Paydesk example end to end: four disagreeing sources → Living Spec → demoshark:1
+      - name: Ingest, synthesize, lower
+        working-directory: examples/paydesk
+        run: |
+          uv run megamouth ingest inbox
+          uv run megamouth synth --id paydesk --title "Paydesk accounts payable"
+          uv run megamouth lower spec/proposed/paydesk.yaml -p approve-an-invoice
+      - name: Proposed spec in git is up to date
+        run: git diff --exit-code -- examples/paydesk/spec/proposed/
+      - name: Missing human decisions must block lowering
+        working-directory: examples/paydesk
+        run: |
+          mv spec/overlay.yaml /tmp/overlay.yaml
+          uv run megamouth synth --id no-overlay --out /tmp/no-overlay.yaml
+          mv /tmp/overlay.yaml spec/overlay.yaml
+          if uv run megamouth lower /tmp/no-overlay.yaml -p approve-an-invoice --out /tmp/no-overlay-ds.yaml; then
+            echo "Lowering without base_url and fixtures should have reported blockers"; exit 1
+          fi
+
+      # Prove the lowered spec with DEMOShark itself: its rules, then a real run against Paydesk
+      - name: Install DEMOShark
+        run: |
+          git clone --depth 1 https://github.com/shawndale-glitch/demoshark.git ../demoshark
+          python -m venv ../ds && ../ds/bin/pip install -q -e ../demoshark
+          sudo apt-get install -y fonts-noto-core || true
+          ../ds/bin/python -m playwright install --with-deps chromium
+      - name: DEMOShark check (rules DS1-DS10)
+        run: ../ds/bin/python -m demoshark check examples/paydesk/build/demoshark/approve-an-invoice.yaml
+      - name: Record the generated walk-through against Paydesk, captions only
+        run: ../ds/bin/python -m demoshark demo --spec examples/paydesk/build/demoshark/approve-an-invoice.yaml --voice none --lang en --out build
+      - name: Drift must fail
+        run: |
+          if ../ds/bin/python -m demoshark demo --spec examples/paydesk/build/demoshark/approve-an-invoice.yaml --drift --voice none --lang en --out build-drift; then
+            echo "A renamed button was not detected"; exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: walkthrough
+          path: |
+            build/approve-an-invoice/
+            examples/paydesk/spec/proposed/paydesk.yaml
+            examples/paydesk/build/demoshark/

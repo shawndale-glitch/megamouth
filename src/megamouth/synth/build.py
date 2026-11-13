@@ -342,7 +342,7 @@ def synthesize(store: EvidenceStore, *, title: str, spec_id: str, languages: lis
         provided = _overlay_paths(overlay)
         ctx.review = [r for r in ctx.review if not any(r.about.startswith(p) for p in provided)]
     d["provenance"] = {
-        "sources": [s.model_dump(mode="json") for s in sources.values()],
+        "sources": [s.model_dump(mode="json", exclude={"ingested_at"}) for s in sources.values()],  # deterministic: re-synth gives a clean diff
         "conflicts": [c.model_dump(mode="json") for c in ctx.conflicts],
         "review": [r.model_dump(mode="json") for r in ctx.review],
     }
