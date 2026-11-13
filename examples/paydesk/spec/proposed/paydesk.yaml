@@ -1,0 +1,453 @@
+# Megamouth Living Spec (megamouth: 1). Proposed by `megamouth synth`; review before merging.
+megamouth: 1
+meta:
+  id: paydesk
+  title: Paydesk accounts payable
+  owner: Demo process owner
+  version: 1.0.0
+  environment: demo
+  languages:
+  - en
+glossary: []
+actors:
+- id: ap-clerk
+  status: proposed
+  evidence:
+  - ev:invoice-approval#node:1:2@8e7871c9
+  - ev:p2p-invoice-approval#node:lane-clerk@0ac74d71
+  - ev:paydesk-sop#row:2@5eafa4a1
+  - ev:paydesk-sop#row:3@5eafa4a1
+  - ev:paydesk-sop#row:4@5eafa4a1
+  assumption: false
+  confidence: 1.0
+  name: AP Clerk
+  role: ''
+- id: ap-lead
+  status: proposed
+  evidence:
+  - ev:invoice-approval#node:1:3@8e7871c9
+  assumption: false
+  confidence: 1.0
+  name: AP Lead
+  role: ''
+- id: finance-manager
+  status: proposed
+  evidence:
+  - ev:p2p-invoice-approval#node:lane-mgr@0ac74d71
+  - ev:paydesk-sop#row:6@5eafa4a1
+  - ev:paydesk-sop#row:7@5eafa4a1
+  assumption: false
+  confidence: 1.0
+  name: Finance Manager
+  role: ''
+systems:
+- id: paydesk
+  status: proposed
+  evidence:
+  - ev:paydesk-sop#row:2@5eafa4a1
+  - ev:paydesk-sop#row:3@5eafa4a1
+  - ev:paydesk-sop#row:4@5eafa4a1
+  - ev:paydesk-sop#row:5@5eafa4a1
+  - ev:paydesk-sop#row:6@5eafa4a1
+  - ev:overlay#systems.paydesk
+  assumption: false
+  confidence: 1.0
+  name: Paydesk
+  kind: web-app
+  base_url_env: ''
+  base_url: http://127.0.0.1:8765
+  lang_param: lang
+  adapter: paydesk
+screens: []
+transitions: []
+processes:
+- id: P2P-03
+  status: proposed
+  evidence:
+  - ev:p2p-invoice-approval#node:P2P-03@0ac74d71
+  - ev:invoice-approval#node:1:1@8e7871c9
+  assumption: false
+  confidence: 1.0
+  name: Invoice approval
+  lanes:
+  - AP Clerk
+  - Finance Manager
+  nodes:
+  - id: start
+    status: proposed
+    evidence:
+    - ev:p2p-invoice-approval#node:start@0ac74d71
+    - ev:p2p-invoice-approval#node:f1@0ac74d71
+    - ev:invoice-approval#node:1:4@8e7871c9
+    - ev:invoice-approval#node:c0@8e7871c9
+    assumption: false
+    confidence: 1.0
+    type: start
+    name: Invoice received
+    lane: AP Clerk
+    out:
+    - to: t-register
+      when: ''
+    procedure: ''
+  - id: t-register
+    status: proposed
+    evidence:
+    - ev:p2p-invoice-approval#node:t-register@0ac74d71
+    - ev:p2p-invoice-approval#node:f2@0ac74d71
+    - ev:invoice-approval#node:1:5@8e7871c9
+    - ev:invoice-approval#node:c1@8e7871c9
+    assumption: false
+    confidence: 1.0
+    type: task
+    name: Register invoice
+    lane: AP Clerk
+    out:
+    - to: t-match
+      when: ''
+    procedure: ''
+  - id: t-match
+    status: proposed
+    evidence:
+    - ev:p2p-invoice-approval#node:t-match@0ac74d71
+    - ev:p2p-invoice-approval#node:f3@0ac74d71
+    - ev:invoice-approval#node:1:6@8e7871c9
+    - ev:invoice-approval#node:c2@8e7871c9
+    assumption: false
+    confidence: 1.0
+    type: task
+    name: Match invoice to purchase order
+    lane: AP Clerk
+    out:
+    - to: g-match
+      when: ''
+    procedure: ''
+  - id: g-match
+    status: proposed
+    evidence:
+    - ev:p2p-invoice-approval#node:g-match@0ac74d71
+    - ev:p2p-invoice-approval#node:f4@0ac74d71
+    - ev:p2p-invoice-approval#node:f5@0ac74d71
+    - ev:invoice-approval#node:1:7@8e7871c9
+    - ev:invoice-approval#node:c3@8e7871c9
+    assumption: false
+    confidence: 1.0
+    type: gateway
+    name: Amounts match?
+    lane: AP Clerk
+    out:
+    - to: t-approve
+      when: yes
+    - to: t-query
+      when: no
+    procedure: ''
+  - id: t-query
+    status: proposed
+    evidence:
+    - ev:p2p-invoice-approval#node:t-query@0ac74d71
+    - ev:p2p-invoice-approval#node:f6@0ac74d71
+    assumption: false
+    confidence: 1.0
+    type: task
+    name: Query supplier
+    lane: AP Clerk
+    out:
+    - to: t-match
+      when: ''
+    procedure: ''
+  - id: t-approve
+    status: proposed
+    evidence:
+    - ev:p2p-invoice-approval#node:t-approve@0ac74d71
+    - ev:p2p-invoice-approval#node:f7@0ac74d71
+    - ev:invoice-approval#node:1:8@8e7871c9
+    - ev:invoice-approval#node:c4@8e7871c9
+    assumption: false
+    confidence: 1.0
+    type: task
+    name: Approve invoice
+    lane: Finance Manager
+    out:
+    - to: end
+      when: ''
+    procedure: approve-an-invoice
+  - id: end
+    status: proposed
+    evidence:
+    - ev:p2p-invoice-approval#node:end@0ac74d71
+    - ev:invoice-approval#node:1:9@8e7871c9
+    assumption: false
+    confidence: 1.0
+    type: end
+    name: Invoice approved
+    lane: Finance Manager
+    out: []
+    procedure: ''
+procedures:
+- id: approve-an-invoice
+  status: proposed
+  evidence:
+  - ev:paydesk-sop#row:2@5eafa4a1
+  - ev:overlay#procedures.approve-an-invoice
+  assumption: false
+  confidence: 1.0
+  title: Approve an invoice
+  process: P2P-03
+  task: t-approve
+  system: paydesk
+  starts_from: ''
+  fixtures:
+    invoice:
+      supplier: Demo Supplier Delta
+      amount: 6400
+      due: +30d
+  steps:
+  - id: S1
+    status: proposed
+    evidence:
+    - ev:paydesk-sop#row:2@5eafa4a1
+    - ev:approve-invoice-training#t:00:00.200@5b08f2b6
+    - ev:approve-invoice-training#t:00:00.000@5b08f2b6
+    assumption: false
+    confidence: 0.5
+    say: Open Paydesk on the invoices screen.
+    do:
+      action: open
+      path: /
+    expect:
+      target:
+        role: heading
+        name: Find an invoice
+    result: The Find an invoice screen opens.
+    media:
+      emphasis: ring
+      clip: approve-invoice-training@00:00.200-00:02.800
+  - id: S2
+    status: proposed
+    evidence:
+    - ev:paydesk-sop#row:3@5eafa4a1
+    - ev:approve-invoice-training#t:00:03.200@5b08f2b6
+    - ev:approve-invoice-training#t:00:03.000@5b08f2b6
+    assumption: false
+    confidence: 0.7
+    say: Type the invoice number in Invoice number.
+    do:
+      action: fill
+      target:
+        label: Invoice number
+      value: '{{invoice.number}}'
+    expect:
+      target:
+        label: Invoice number
+      value: '{{invoice.number}}'
+    result: The number is in the Invoice number box.
+    media:
+      emphasis: ring
+      clip: approve-invoice-training@00:03.200-00:05.800
+  - id: S3
+    status: reviewed
+    evidence:
+    - ev:paydesk-sop#row:4@5eafa4a1
+    - ev:approve-invoice-training#t:00:06.200@5b08f2b6
+    - ev:approve-invoice-training#t:00:06.000@5b08f2b6
+    - ev:overlay#procedures.approve-an-invoice.S3
+    assumption: false
+    confidence: 0.6
+    say: Select Search. The invoice appears in the list.
+    do:
+      action: click
+      target:
+        role: button
+        name: Search
+    expect:
+      target:
+        role: link
+        name: '{{invoice.number}}'
+    result: The invoice is listed.
+    media:
+      emphasis: ring
+      clip: approve-invoice-training@00:06.200-00:08.800
+  - id: S4
+    status: reviewed
+    evidence:
+    - ev:paydesk-sop#row:5@5eafa4a1
+    - ev:approve-invoice-training#t:00:09.200@5b08f2b6
+    - ev:approve-invoice-training#t:00:09.000@5b08f2b6
+    - ev:overlay#procedures.approve-an-invoice.S4
+    assumption: false
+    confidence: 0.7
+    say: Select the invoice number link to open it.
+    do:
+      action: click
+      target:
+        role: link
+        name: '{{invoice.number}}'
+    expect:
+      target:
+        role: heading
+        name: Invoice details
+    result: The Invoice details screen opens.
+    media:
+      emphasis: ring
+      clip: approve-invoice-training@00:09.200-00:11.800
+  - id: S5
+    status: proposed
+    evidence:
+    - ev:paydesk-sop#row:6@5eafa4a1
+    - ev:approve-invoice-training#t:00:15.200@5b08f2b6
+    - ev:approve-invoice-training#t:00:15.000@5b08f2b6
+    assumption: false
+    confidence: 0.6
+    say: Select Approve.
+    do:
+      action: click
+      target:
+        role: button
+        name: Approve
+    expect:
+      target:
+        role: dialog
+        name: Approve invoice
+    result: The Approve invoice window opens.
+    media:
+      emphasis: ring
+      clip: approve-invoice-training@00:15.200-00:17.800
+  - id: S6
+    status: proposed
+    evidence:
+    - ev:paydesk-sop#row:7@5eafa4a1
+    - ev:approve-invoice-training#t:00:18.200@5b08f2b6
+    - ev:approve-invoice-training#t:00:18.000@5b08f2b6
+    assumption: false
+    confidence: 0.55
+    say: Check the supplier and the amount, then select Confirm.
+    do:
+      action: click
+      target:
+        role: button
+        name: Confirm
+    expect:
+      target:
+        text: Invoice {{invoice.number}} approved.
+    result: Paydesk shows "Invoice {{invoice.number}} approved."
+    media:
+      emphasis: ring
+      clip: approve-invoice-training@00:18.200-00:20.800
+  verify:
+  - fixture: invoice
+    field: status
+    equals: approved
+  - fixture: invoice
+    field: approved_by
+    filled: true
+rules: []
+provenance:
+  sources:
+  - id: approve-invoice-training
+    kind: video
+    uri: inbox/approve-invoice-training.mp4
+    sha256: 5b08f2b6b256bb7f23c10db2a1a446ab956fbbc98f44990d1a5d5084188d559f
+    adapter: av.screenrec@0.1
+    ingested_at: '2026-11-13T12:28:24+00:00'
+    cloud: true
+  - id: invoice-approval
+    kind: figjam
+    uri: inbox/invoice-approval.board.json
+    sha256: 8e7871c943c555c4f46c1b6a3f4a165458e3efed45c7a67345b56b268876f0aa
+    adapter: diagrams.figjam@0.1
+    ingested_at: '2026-11-13T12:28:24+00:00'
+    cloud: true
+  - id: p2p-invoice-approval
+    kind: bpmn
+    uri: inbox/p2p-invoice-approval.bpmn
+    sha256: 0ac74d71fa663d2d6a4bbe49642339633df80dd5f66eab63e01c2c7e1f939f4f
+    adapter: diagrams.bpmn@0.1
+    ingested_at: '2026-11-13T12:28:24+00:00'
+    cloud: true
+  - id: paydesk-sop
+    kind: sheet
+    uri: inbox/paydesk-sop.csv
+    sha256: 5eafa4a12a24d0690ae8c3bc4046482b0528a71c6ac37133e5dbf408e0fbd8f1
+    adapter: sheets.sop@0.1
+    ingested_at: '2026-11-13T12:28:24+00:00'
+    cloud: true
+  conflicts:
+  - id: C1
+    about: P2P-03.t-approve.lane
+    summary: "'Approve invoice' is in different lanes"
+    claims:
+    - value: Finance Manager
+      evidence:
+      - ev:p2p-invoice-approval#node:t-approve@0ac74d71
+    - value: AP Lead
+      evidence:
+      - ev:invoice-approval#node:1:8@8e7871c9
+    status: open
+    resolved_by: ''
+  - id: C2
+    about: P2P-03.end.lane
+    summary: "'Invoice approved' is in different lanes"
+    claims:
+    - value: Finance Manager
+      evidence:
+      - ev:p2p-invoice-approval#node:end@0ac74d71
+    - value: AP Lead
+      evidence:
+      - ev:invoice-approval#node:1:9@8e7871c9
+    status: open
+    resolved_by: ''
+  - id: C3
+    about: P2P-03.t-query
+    summary: task 'Query supplier' appears in only one diagram
+    claims:
+    - value: Query supplier
+      evidence:
+      - ev:p2p-invoice-approval#node:t-query@0ac74d71
+    - evidence:
+      - ev:invoice-approval#node:1:1@8e7871c9
+    status: open
+    resolved_by: ''
+  - id: C4
+    about: P2P-03.lanes
+    summary: lane 'AP Lead' is missing from one diagram
+    claims:
+    - value: AP Lead
+      evidence:
+      - ev:invoice-approval#node:1:1@8e7871c9
+    - value:
+      - AP Clerk
+      - Finance Manager
+      evidence:
+      - ev:p2p-invoice-approval#node:P2P-03@0ac74d71
+    status: open
+    resolved_by: ''
+  - id: C5
+    about: approve-an-invoice
+    summary: "recording approve-invoice-training shows a step the SOP lacks: 'Before approving, check the due date on the
+      invoice.'"
+    claims:
+    - value: Before approving, check the due date on the invoice.
+      evidence:
+      - ev:approve-invoice-training#t:00:12.200@5b08f2b6
+    - evidence:
+      - ev:paydesk-sop#row:2@5eafa4a1
+    status: open
+    resolved_by: ''
+  review:
+  - id: R1
+    about: P2P-03.t-match
+    reason: low-confidence match (0.682) with 'Match invoice to PO' in another diagram
+  - id: R2
+    about: approve-an-invoice.S1.do
+    reason: guessed open (0.5); confirm the control and its visible name
+  - id: R3
+    about: approve-an-invoice.S2.do
+    reason: guessed fill (0.7); confirm the control and its visible name
+  - id: R4
+    about: approve-an-invoice.S3.do
+    reason: guessed click (0.6); confirm the control and its visible name
+  - id: R6
+    about: approve-an-invoice.S5.do
+    reason: guessed click (0.6); confirm the control and its visible name
+  - id: R7
+    about: approve-an-invoice.S6.do
+    reason: guessed click (0.55); confirm the control and its visible name

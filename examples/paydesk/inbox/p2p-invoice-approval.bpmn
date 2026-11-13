@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="defs" targetNamespace="https://example.com/paydesk">
+  <collaboration id="collab">
+    <participant id="pool" name="Invoice approval" processRef="P2P-03"/>
+  </collaboration>
+  <process id="P2P-03" name="Invoice approval" isExecutable="false">
+    <laneSet id="ls">
+      <lane id="lane-clerk" name="AP Clerk"><flowNodeRef>start</flowNodeRef><flowNodeRef>t-register</flowNodeRef><flowNodeRef>t-match</flowNodeRef><flowNodeRef>g-match</flowNodeRef><flowNodeRef>t-query</flowNodeRef></lane>
+      <lane id="lane-mgr" name="Finance Manager"><flowNodeRef>t-approve</flowNodeRef><flowNodeRef>end</flowNodeRef></lane>
+    </laneSet>
+    <startEvent id="start" name="Invoice received"/>
+    <userTask id="t-register" name="Register invoice"/>
+    <userTask id="t-match" name="Match invoice to purchase order"/>
+    <exclusiveGateway id="g-match" name="Amounts match?"/>
+    <userTask id="t-query" name="Query supplier"/>
+    <userTask id="t-approve" name="Approve invoice"/>
+    <endEvent id="end" name="Invoice approved"/>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="t-register"/>
+    <sequenceFlow id="f2" sourceRef="t-register" targetRef="t-match"/>
+    <sequenceFlow id="f3" sourceRef="t-match" targetRef="g-match"/>
+    <sequenceFlow id="f4" name="yes" sourceRef="g-match" targetRef="t-approve"/>
+    <sequenceFlow id="f5" name="no" sourceRef="g-match" targetRef="t-query"/>
+    <sequenceFlow id="f6" sourceRef="t-query" targetRef="t-match"/>
+    <sequenceFlow id="f7" sourceRef="t-approve" targetRef="end"/>
+  </process>
+</definitions>

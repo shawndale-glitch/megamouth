@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "megamouth"
+version = "0.1.0"
+description = "Anything in, Living Spec out: ingest docs, diagrams, SOPs and recordings into one provenance-tracked spec, then compile it to documentation."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Shawn Dale" }]
+dependencies = [
+  "pydantic>=2.7",
+  "ruamel.yaml>=0.18",
+  "jsonschema>=4.18",
+  "typer>=0.12",
+  "rich>=13",
+]
+
+[project.optional-dependencies]
+llm    = ["anthropic>=1.0"]
+sheets = ["openpyxl>=3.1"]
+av     = ["imageio-ffmpeg>=0.5"]          # keyframes; faster-whisper is optional on top
+asr    = ["faster-whisper>=1.0"]
+all    = ["megamouth[llm,sheets,av]"]
+
+[project.scripts]
+megamouth = "megamouth.cli:app"
+
+# Built-in plugins are registered exactly like third-party ones.
+[project.entry-points."megamouth.ingest"]
+"sheets.sop"     = "megamouth.ingest.sheets:SopSheetIngester"
+"diagrams.bpmn"  = "megamouth.ingest.diagrams:BpmnIngester"
+"diagrams.figjam" = "megamouth.ingest.diagrams:FigJamIngester"
+"av.screenrec"   = "megamouth.ingest.av:ScreenRecordingIngester"
+
+[dependency-groups]
+dev = ["pytest>=8", "openpyxl>=3.1", "imageio-ffmpeg>=0.5"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/megamouth"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

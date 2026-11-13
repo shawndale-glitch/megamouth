@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+evidence/
+build/
+cache/
+manual/
+.env
+.DS_Store
+# internal design notes stay local until sanitized
+docs/ARCHITECTURE.md

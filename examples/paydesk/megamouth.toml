@@ -1,0 +1,15 @@
+# Megamouth workspace configuration
+[workspace]
+environment = "demo"            # test | training | demo. Production is always refused.
+languages = ["en"]
+
+[llm]
+model = "claude-opus-5-5"
+effort = "medium"
+mode = "auto"                   # auto | cloud | manual  (manual: write prompts to manual/, paste results back)
+
+[policy]
+# Which sources may be sent to a cloud model, by glob over the source path.
+# Default is deny. Fictional demo data (Paydesk) is allowed; real sources stay local.
+cloud_allow = ["**/paydesk/**", "**/examples/**"]
+cloud_deny  = []

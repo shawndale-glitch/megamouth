@@ -1,0 +1,202 @@
+{
+  "extractor": "figjam_extract.js@2",
+  "source": {
+    "figma_file_key": "EXAMPLEFILEKEY0000000000",
+    "page_id": "0:1",
+    "section_id": "1:0",
+    "section_name": "P2P-03 Invoice approval",
+    "exported_at": "2026-11-12T10:00:00Z"
+  },
+  "instances": [
+    {
+      "id": "1:1",
+      "component": "Template/Header block",
+      "component_key": "",
+      "props": {
+        "Process ID": "P2P-03",
+        "Process name": "Invoice approval",
+        "Owner": "Demo AP Lead",
+        "Status": "Draft",
+        "Version": "v0.3"
+      },
+      "texts": [],
+      "x": 40,
+      "y": 40,
+      "w": 500,
+      "h": 300
+    },
+    {
+      "id": "1:2",
+      "component": "Markers/Swimlane",
+      "component_key": "",
+      "props": {
+        "Role": "AP Clerk"
+      },
+      "texts": [
+        "AP Clerk"
+      ],
+      "x": 40,
+      "y": 400,
+      "w": 2400,
+      "h": 300
+    },
+    {
+      "id": "1:3",
+      "component": "Markers/Swimlane",
+      "component_key": "",
+      "props": {
+        "Role": "AP Lead"
+      },
+      "texts": [
+        "AP Lead"
+      ],
+      "x": 40,
+      "y": 720,
+      "w": 2400,
+      "h": 300
+    },
+    {
+      "id": "1:4",
+      "component": "Events/Start event",
+      "component_key": "",
+      "props": {
+        "Label": "Invoice received"
+      },
+      "texts": [
+        "Invoice received"
+      ],
+      "x": 120,
+      "y": 500,
+      "w": 100,
+      "h": 100
+    },
+    {
+      "id": "1:5",
+      "component": "Activities/Activity",
+      "component_key": "",
+      "props": {
+        "Label": "Register invoice"
+      },
+      "texts": [
+        "Register invoice"
+      ],
+      "x": 300,
+      "y": 500,
+      "w": 200,
+      "h": 100
+    },
+    {
+      "id": "1:6",
+      "component": "Activities/Activity",
+      "component_key": "",
+      "props": {
+        "Label": "Match invoice to PO"
+      },
+      "texts": [
+        "Match invoice to PO"
+      ],
+      "x": 600,
+      "y": 500,
+      "w": 200,
+      "h": 100
+    },
+    {
+      "id": "1:7",
+      "component": "Gateways/Decision (XOR)",
+      "component_key": "",
+      "props": {
+        "Label": "Amounts match?"
+      },
+      "texts": [
+        "Amounts match?"
+      ],
+      "x": 900,
+      "y": 500,
+      "w": 120,
+      "h": 120
+    },
+    {
+      "id": "1:8",
+      "component": "Activities/Activity",
+      "component_key": "",
+      "props": {
+        "Label": "Approve invoice"
+      },
+      "texts": [
+        "Approve invoice"
+      ],
+      "x": 1100,
+      "y": 820,
+      "w": 200,
+      "h": 100
+    },
+    {
+      "id": "1:9",
+      "component": "Events/End event",
+      "component_key": "",
+      "props": {
+        "Label": "Invoice approved"
+      },
+      "texts": [
+        "Invoice approved"
+      ],
+      "x": 1400,
+      "y": 820,
+      "w": 100,
+      "h": 100
+    },
+    {
+      "id": "1:10",
+      "component": "Data and systems/System",
+      "component_key": "",
+      "props": {
+        "Label": "Paydesk"
+      },
+      "texts": [
+        "Paydesk"
+      ],
+      "x": 600,
+      "y": 250,
+      "w": 160,
+      "h": 80
+    }
+  ],
+  "connectors": [
+    {
+      "id": "c0",
+      "from": "1:4",
+      "to": "1:5",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "id": "c1",
+      "from": "1:5",
+      "to": "1:6",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "id": "c2",
+      "from": "1:6",
+      "to": "1:7",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "id": "c3",
+      "from": "1:7",
+      "to": "1:8",
+      "label": "yes",
+      "dashed": false
+    },
+    {
+      "id": "c4",
+      "from": "1:8",
+      "to": "1:9",
+      "label": "",
+      "dashed": false
+    }
+  ],
+  "other": []
+}

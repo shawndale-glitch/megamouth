@@ -1,0 +1,22 @@
+# Human decisions, applied after every synthesis so re-ingesting never loses them.
+# Each one becomes evidence `ev:overlay#...` on the element it touches.
+meta:
+  owner: Demo process owner
+  version: 1.0.0
+systems:
+  paydesk:
+    base_url: http://127.0.0.1:8765     # DEMOShark's bundled fictional app
+    lang_param: lang
+    adapter: paydesk
+procedures:
+  approve-an-invoice:
+    fixtures:
+      invoice: { supplier: Demo Supplier Delta, amount: 6400, due: +30d }
+    verify:
+      - { fixture: invoice, field: status, equals: approved }
+      - { fixture: invoice, field: approved_by, filled: true }
+    steps:
+      S3:
+        expect: { target: { role: link, name: "{{invoice.number}}" } }
+      S4:
+        do: { action: click, target: { role: link, name: "{{invoice.number}}" } }

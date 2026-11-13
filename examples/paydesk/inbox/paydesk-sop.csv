@@ -1,0 +1,7 @@
+Process,Step,Action,Actor,System,Data,Expected result
+Approve an invoice,1,Open Paydesk on the invoices screen.,AP Clerk,Paydesk,,The Find an invoice screen opens.
+Approve an invoice,2,Type the invoice number in Invoice number.,AP Clerk,Paydesk,{{invoice.number}},The number is in the Invoice number box.
+Approve an invoice,3,Select Search. The invoice appears in the list.,AP Clerk,Paydesk,,The invoice is listed.
+Approve an invoice,4,Select the invoice number link to open it.,AP Clerk,Paydesk,,The Invoice details screen opens.
+Approve an invoice,5,Select Approve.,Finance Manager,Paydesk,,The Approve invoice window opens.
+Approve an invoice,6,"Check the supplier and the amount, then select Confirm.",Finance Manager,Paydesk,,"Paydesk shows ""Invoice {{invoice.number}} approved."""
